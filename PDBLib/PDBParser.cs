@@ -106,7 +106,8 @@ namespace PDBLib
 					 Lines  = new List<PDBLine>(f.Lines.Select(l=>new PDBLine() {
 						 CodeOffset = l.offset, //within function
 						 LineNumber = (l.flags & (uint)CV_Line_Flags.linenumStart), 
-						 OtherFlags = (l.flags & ~(uint)CV_Line_Flags.linenumStart)}))
+						 DeltaLineEnd = (byte)((l.flags & (uint)CV_Line_Flags.deltaLineEnd)>>24),
+						 IsStatement = (l.flags & (uint)CV_Line_Flags.fStatement)!=0,}))
 				}).ToList();
 			}
 			return doc;

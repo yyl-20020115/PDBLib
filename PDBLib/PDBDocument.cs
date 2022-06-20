@@ -52,8 +52,9 @@
     public class PDBLine
     {
         public uint CodeOffset = 0;
-        public uint LineNumber = 0;
-        public uint OtherFlags = 0;
+        public uint LineNumber = 0; //0~2^24-1
+        public byte DeltaLineEnd = 0; //0~128
+        public bool IsStatement = false;
     }
 
     public class PDBModule
