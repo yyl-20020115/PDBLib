@@ -1,0 +1,41 @@
+info:
+  creator: "The Netwide Assembler 2.16rc0"
+  version: "2.15.9990"
+  output: "hello.obj"
+  language: "ASM"
+  machine: 0x0006
+source-files:
+  - name: "hello.asm"
+    line-count: 8
+    locations:
+      - file-offset: 0x00000000
+        line-number: 17
+      - file-offset: 0x00000005
+        line-number: 18
+      - file-offset: 0x0000000A
+        line-number: 19
+      - file-offset: 0x0000000F
+        line-number: 20
+      - file-offset: 0x00000014
+        line-number: 21
+      - file-offset: 0x00000016
+        line-number: 23
+      - file-offset: 0x0000001B
+        line-number: 24
+      - file-offset: 0x00000020
+        line-number: 25
+symbols:
+  - name: "msg"
+    section: 0x0008
+    offset: 0x00000000
+    size: 0x00000000
+    type: "LDATA"
+    stype: "BYTE"
+    bits: 32
+  - name: "main"
+    section: 0x0002
+    offset: 0x00000000
+    size: 0x00000000
+    type: "PROC"
+    stype: "NONE"
+    bits: 32

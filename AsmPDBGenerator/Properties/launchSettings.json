@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "AsmPDBGenerator": {
+      "commandName": "Project",
+      "commandLineArgs": "hello.obj.debug.yml",
+      "workingDirectory": "..\\testing\\testdata\\nasm"
+    }
+  }
+}

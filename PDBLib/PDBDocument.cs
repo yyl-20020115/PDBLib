@@ -14,9 +14,20 @@
     ///| n+7	         | Type hash                          | Hash used by the TPI stream.
     /// </summary>
     //[Yaml]
-    
+
+   
+    public enum PDBBits:uint
+    {
+        Bits32 = 0,
+        Bits64 = 1,
+    }
     public class PDBDocument
     {
+        public string Creator = "";
+        public string Version = "";
+        public string Language = "";
+        public string Machine = "";
+        public PDBBits Bits = PDBBits.Bits64;
         public List<string> Names = new();
         public List<PDBGlobal> Globals = new();
         public List<PDBModule> Modules = new();
@@ -30,6 +41,7 @@
         public PDBType Type = new();
         public uint Offset = 0;
         public uint Segment = 0;
+        public uint Size = 0;
     }
     public class PDBType
     {
@@ -39,8 +51,8 @@
     }
     public class PDBLine
     {
-        public uint LineNumber = 0;
         public uint CodeOffset = 0;
+        public uint LineNumber = 0;
     }
 
     public class PDBModule
