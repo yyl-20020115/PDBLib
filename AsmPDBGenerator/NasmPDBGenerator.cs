@@ -7,8 +7,9 @@ using YamlDotNet.RepresentationModel;
 using PDBLib;
 namespace AsmPDBGenerator
 {
-    public class NasmPDBGenerator
+    public class NasmPDBGenerator : IAsmPDBGenerator
     {
+        public const string NasmCreator = "The Netwide Assembler";
         public PDBDocument PDBDocument => this.document;
         public PDBModule PDBModule => this.module;
         public PDBFunction PDBFunction => this.function;
@@ -23,17 +24,23 @@ namespace AsmPDBGenerator
             this.document.Functions.Add(this.function);
             this.document.Modules.Add(this.module);
         }
-        protected void ProcessInfo(YamlNode info)
+        protected bool ProcessInfo(YamlNode info)
         {
             if(info is YamlMappingNode mapping)
             {
-                document.Creator = (string?)mapping["creator"] ?? "";
-                document.Version = (string?)mapping["version"] ?? "";
-                document.Language = (string?)mapping["language"] ?? "";
-                document.Machine = (string?)mapping["machine"] ?? "";
+                var creator = (string?)mapping["creator"] ?? "";
+                if (creator.StartsWith(NasmCreator))
+                {
+                    document.Creator = creator;
+                    document.Version = (string?)mapping["version"] ?? "";
+                    document.Language = (string?)mapping["language"] ?? "";
+                    document.Machine = (string?)mapping["machine"] ?? "";
 
-                module.ModuleName = (string?)mapping["output"] ?? "";
+                    module.ModuleName = (string?)mapping["output"] ?? "";
+                    return true;
+                }
             }
+            return false;
         }
         protected void ProcessSourceFiles(YamlNode source_files)
         {
@@ -116,23 +123,24 @@ namespace AsmPDBGenerator
             stream.Load(reader);
             foreach(var doc in stream.Documents)
             {
-                if(doc.RootNode is YamlMappingNode root)
+                if (doc.RootNode is YamlMappingNode root 
+                    && root.Children.TryGetValue("info", out var info))
                 {
-                    if (root.Children.TryGetValue("info", out var info))
+                    if (this.ProcessInfo(info))
                     {
-                        this.ProcessInfo(info);
-                    }
-                    if (root.Children.TryGetValue("symbols", out var symbols))
-                    {
-                        this.ProcessSymbols(symbols);
-                    }
-                    if (root.Children.TryGetValue("source-files",out var source_files))
-                    {
-                        this.ProcessSourceFiles(source_files);
+                        if (root.Children.TryGetValue("symbols", out var symbols))
+                        {
+                            this.ProcessSymbols(symbols);
+                        }
+                        if (root.Children.TryGetValue("source-files", out var source_files))
+                        {
+                            this.ProcessSourceFiles(source_files);
+                        }
+                        return true;
                     }
                 }
             }
-            return true;
+            return false;
         }
         public bool Generate(string pdb_path) 
             => this.generator.Load(this.document) && this.generator.Generate(pdb_path);

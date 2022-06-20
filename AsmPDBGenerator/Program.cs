@@ -2,20 +2,29 @@
 {
     public static class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
-            foreach(var arg in args)
+            var i = 0;
+            if (args.Length == 0)
             {
-                if(Path.GetExtension(arg).ToLower() == ".yml")
+                Console.WriteLine("AsmPDBGenerator generates .pdb files from .yml files (produced by NASM etc)");
+                Console.WriteLine("Usage: AsmPDBGenerator [debug1.yml] [debug2.yml] ...");
+            }
+            else
+            {
+                foreach (var arg in args)
                 {
-                    var generator = new NasmPDBGenerator();
-                    if (generator.Load(arg))
+                    if (Path.GetExtension(arg).ToLower() == ".yml")
                     {
-                        generator.Generate(Path.ChangeExtension(arg, ".pdb"));
+                        var generator = new NasmPDBGenerator();
+                        if (generator.Load(arg) && generator.Generate(Path.ChangeExtension(arg, ".pdb")))
+                        {
+                            i++;
+                        }
                     }
                 }
-
             }
+            return i == args.Length ? 0 : -i;
         }
     }
 }

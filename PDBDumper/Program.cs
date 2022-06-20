@@ -4,27 +4,38 @@ namespace PDBDumper
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
-            foreach (var arg in args)
+            var i = 0;
+            if (args.Length == 0)
             {
-                if (Path.GetExtension(arg).ToLower() == ".pdb")
+                Console.WriteLine("PDBDumper generates .yml files from .pdb files");
+                Console.WriteLine("Usage: PDBDumper [debug1.pdb] [debug2.pdb] ...");
+            }
+            else
+            {
+                foreach (var arg in args)
                 {
-                    var parser = new PDBParser();
-
-                    if (parser.Load(arg))
+                    if (Path.GetExtension(arg).ToLower() == ".pdb")
                     {
-                        var doc = parser.Parse();
-                        if (doc != null)
+                        var parser = new PDBParser();
+
+                        if (parser.Load(arg))
                         {
-                            var builder = new SerializerBuilder();
-                            var serializer = builder.Build();
-                            using var output = new StreamWriter(Path.ChangeExtension(arg,".yml"));
-                            serializer.Serialize(output, doc);
+                            var doc = parser.Parse();
+                            if (doc != null)
+                            {
+                                var builder = new SerializerBuilder();
+                                var serializer = builder.Build();
+                                using var output = new StreamWriter(Path.ChangeExtension(arg, ".yml"));
+                                serializer.Serialize(output, doc);
+                                i++;
+                            }
                         }
                     }
                 }
             }
+            return i == args.Length ? 0 : -i;
         }
     }
 }
