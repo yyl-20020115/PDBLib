@@ -72,6 +72,8 @@ namespace AsmPDBGenerator
                                 if(uint.TryParse((string?)loc["file-offset"] ?? "", out var file_offset)
                                     && uint.TryParse((string?)loc["line-number"]??"",out var line_number))
                                 {
+                                    //line number is related to function start line
+                                    //however we only have one function for Nasm.
                                     this.function.Lines.Add(new PDBLine
                                         { CodeOffset = file_offset, LineNumber = line_number });
                                 }
@@ -118,7 +120,7 @@ namespace AsmPDBGenerator
                         uint.TryParse(size, out var _size);
                         this.document.Globals.Add(
                             new PDBGlobal { Name = name, Offset=_offset,
-                                Segment = segment, Type = new(){ TypeName = ConvertTypeName(stype) },
+                                Segment = segment, LeafType = ConvertTypeName(stype),
                                 SymType = type,
                             });
                     }

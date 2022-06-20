@@ -9,9 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PDBWriter", "PDBWriter\PDBW
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PDBLib", "PDBLib\PDBLib.csproj", "{E98F4015-7486-4EE8-B84F-D147EA07EEC8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsmPDBGenerator", "AsmPDBGenerator\AsmPDBGenerator.csproj", "{ECDAE00B-A9D5-48FD-AC6D-9471EF42F2C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AsmPDBGenerator", "AsmPDBGenerator\AsmPDBGenerator.csproj", "{ECDAE00B-A9D5-48FD-AC6D-9471EF42F2C3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDBRoundTrip", "PDBRoundTrip\PDBRoundTrip.csproj", "{8F903510-8FA1-407C-A96B-987BFEB56242}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PDBRoundTrip", "PDBRoundTrip\PDBRoundTrip.csproj", "{8F903510-8FA1-407C-A96B-987BFEB56242}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

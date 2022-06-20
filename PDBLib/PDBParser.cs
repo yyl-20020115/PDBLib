@@ -80,18 +80,14 @@ namespace PDBLib
 			var doc = new PDBDocument();
             if (this.ParseInternal())
             {
-				uint ln = 1;
 				doc.Names = new(this.names.Dict.Values);
 				doc.Globals = this.globals.Values.Select(g => new PDBGlobal()
 				{
 					Name = g.Item1,
 					Offset = g.Item2.offset,
 					Segment = g.Item2.segment,
-					Type = new PDBType()
-					{
-						TypeName = ((TYPE_ENUM)g.Item2.symType).ToString(),
-						TypeLeaf = ((LEAF)g.Item2.leafType).ToString()
-					}
+					LeafType = g.Item2.leafType.ToString(),
+					SymType = g.Item2.symType.ToString(),
 				}).ToList();
 				
 				doc.Types = this.types.Select(t => Utils.ToPDBType(t.Key, this.types)).ToList();
@@ -100,15 +96,17 @@ namespace PDBLib
 						ModuleName = m.ModuleName, 
 						ObjectName = m.ObjectName }).ToList();
 				doc.Functions = this.functions.Select(f => new PDBFunction() { 
+					 Type = Utils.ToPDBType(f.TypeIndex, this.types),
 					 Name = f.Name,
 					 offset = f.Offset,
 					 length = f.Length,
 					 paramSize = f.ParamSize,
 					 segment = f.Segment,
 					 fileIndex = f.FileIndex,
-					 typeIndex = f.TypeIndex,
-					 Lines  = new List<PDBLine>(f.Lines.Select(l=>new PDBLine() { 
-						 Flags=l.flags, CodeOffset=l.offset,LineNumber=ln++ }) )
+					 Lines  = new List<PDBLine>(f.Lines.Select(l=>new PDBLine() {
+						 CodeOffset = l.offset, //within function
+						 LineNumber = (l.flags & (uint)CV_Line_Flags.linenumStart), 
+						 OtherFlags = (l.flags & ~(uint)CV_Line_Flags.linenumStart)}))
 				}).ToList();
 			}
 			return doc;
@@ -602,7 +600,7 @@ namespace PDBLib
 				if (len >= gcs)
 				{
 					var rec = reader.Read<GlobalRecord>();
-					var name = Encoding.Latin1.GetString(reader.ReadBytes(len - gcs));
+					var name = Encoding.Latin1.GetString(reader.ReadBytes(len - gcs)).TrimEnd('\0');
 
 					// Is function?
 					if (rec.symType == 2)

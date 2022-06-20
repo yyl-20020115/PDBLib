@@ -37,15 +37,14 @@
     public class PDBGlobal
     {
         public string Name = "";
+        public string LeafType = "";
         public string SymType = "";
-        public PDBType Type = new();
         public uint Offset = 0;
         public uint Segment = 0;
     }
     public class PDBType
     {
         public string TypeName = "";
-        public string TypeLeaf = "";
         public bool IsPointer = false;
         public Dictionary<string, string> Values =new();
         public Dictionary<string, PDBType> SubTypes = new();
@@ -54,7 +53,7 @@
     {
         public uint CodeOffset = 0;
         public uint LineNumber = 0;
-        public uint Flags = 0;
+        public uint OtherFlags = 0;
     }
 
     public class PDBModule
@@ -64,12 +63,12 @@
     }
     public class PDBFunction
     {
+        public PDBType Type =new();
         public string Name = "";
         public uint segment = 0;
         public uint offset = 0;
         public uint fileIndex = 0;
         public uint length = 0;
-        public uint typeIndex = 0; // If this is non-zero, the function is a procedure, not a thunk (I don't know how to read thunk type info...)
         public uint paramSize = 0;
         public uint bits = 0;
         public List<PDBLine> Lines = new();

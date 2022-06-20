@@ -130,7 +130,7 @@ namespace PDBLib
 		public byte[] val;
 	}
 
-	public enum CV_SIGNATURE_Enum :uint
+	public enum CV_SIGNATURE :uint
 	{
 		C6 = 0,    // Actual signature is >64K
 		C7 = 1,    // First explicit signature
@@ -139,9 +139,9 @@ namespace PDBLib
 		RESERVERD = 5,    // All signatures from 5 to 64K are reserved
 	}
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public struct CV_SIGNATURE
+	public struct CV_SIGNATURE_
 	{
-		public CV_SIGNATURE_Enum signature;
+		public CV_SIGNATURE signature;
 	}
 
 
@@ -252,7 +252,7 @@ namespace PDBLib
 	}
 	//  subtype enumeration values for CV_REAL and CV_COMPLEX
 
-	public enum CV_real_Enum : uint
+	public enum CV_real : uint
 	{
 		CV_RC_REAL32 = 0x00,
 		CV_RC_REAL64 = 0x01,
@@ -260,14 +260,14 @@ namespace PDBLib
 		CV_RC_REAL128 = 0x03,
 	}
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public struct CV_real
+	public struct CV_real_
 	{
-        public CV_real_Enum real;
+        public CV_real real;
 	}
 
 	//  subtype enumeration values for CV_INT (really int)
 
-	public enum CV_int_Enum : uint
+	public enum CV_int : uint
 	{
 		CV_RI_CHAR = 0x00,
 		CV_RI_INT1 = 0x00,
@@ -284,9 +284,9 @@ namespace PDBLib
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	public struct CV_int
+	public struct CV_int_
 	{
-		public CV_int_Enum cv_int;
+		public CV_int cv_int;
 	}
 
 	public static class CV_PRIMITIVE_TYPE
@@ -517,7 +517,7 @@ namespace PDBLib
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	public struct TYPE_ENUM_
 	{
-		public TYPE_ENUM type_enum;
+		public TYPE_ENUM type;
 	}
 
 	//  No leaf index can have a value of 0x0000.  The leaf indices are
@@ -540,6 +540,7 @@ namespace PDBLib
 	//
 	public enum LEAF : uint
 	{
+		LF_NONE = 0,
 		// leaf indices starting records but referenced from symbol records
 		LF_VTSHAPE = 0x000a,
 		LF_COBOL1 = 0x000c,
