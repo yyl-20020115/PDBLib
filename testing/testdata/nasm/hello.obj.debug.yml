@@ -8,21 +8,21 @@ source-files:
   - name: "hello.asm"
     line-count: 8
     locations:
-      - file-offset: 0x00000000
+      - code-offset: 0x00000000
         line-number: 17
-      - file-offset: 0x00000005
+      - code-offset: 0x00000005
         line-number: 18
-      - file-offset: 0x0000000A
+      - code-offset: 0x0000000A
         line-number: 19
-      - file-offset: 0x0000000F
+      - code-offset: 0x0000000F
         line-number: 20
-      - file-offset: 0x00000014
+      - code-offset: 0x00000014
         line-number: 21
-      - file-offset: 0x00000016
+      - code-offset: 0x00000016
         line-number: 23
-      - file-offset: 0x0000001B
+      - code-offset: 0x0000001B
         line-number: 24
-      - file-offset: 0x00000020
+      - code-offset: 0x00000020
         line-number: 25
 symbols:
   - name: "msg"

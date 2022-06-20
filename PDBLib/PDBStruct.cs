@@ -71,16 +71,15 @@ namespace PDBLib
 	public class FunctionRecord : IComparable<FunctionRecord>
 	{
 		public string Name = "";
+		public string Source = "";
 		public List<CV_Line> Lines = new();
 		public uint LineCount = 0;
 		public uint Segment = 0;
 		public uint Offset = 0;
-		public uint FileIndex = 0;
 		public uint Length = 0;
 		public uint LineOffset = 0;
 		public uint TypeIndex = 0; // If this is non-zero, the function is a procedure, not a thunk (I don't know how to read thunk type info...)
 		public uint ParamSize = 0;
-		public bool LineProcessed = false;
 		public FunctionRecord(string name)
 		{
 			this.Name = name;
@@ -138,6 +137,8 @@ namespace PDBLib
 	public class Module
 	{
 		public DBIModuleInfo Info = new ();
+		public List<string> Sources = new();
+		public List<FunctionRecord> Functions = new();
 		public Dictionary<uint,uint> SrcIndex = new();
 		public string ModuleName = "";
 		public string ObjectName = "";

@@ -33,6 +33,7 @@
         public List<PDBModule> Modules = new();
         public List<PDBFunction> Functions = new();
         public List<PDBType> Types = new();
+        public List<IMAGE_SECTION_HEADER> SectionHeaders = new();
     }
     public class PDBGlobal
     {
@@ -54,24 +55,26 @@
         public uint CodeOffset = 0;
         public uint LineNumber = 0; //0~2^24-1
         public byte DeltaLineEnd = 0; //0~128
-        public bool IsStatement = false;
+        public bool IsExpression = false;
     }
 
     public class PDBModule
     {
         public string ModuleName = "";
         public string ObjectName = "";
+        public List<string> Sources = new();
+        public List<string> FunctionNames = new ();
     }
     public class PDBFunction
     {
-        public PDBType Type =new();
         public string Name = "";
-        public uint segment = 0;
-        public uint offset = 0;
-        public uint fileIndex = 0;
-        public uint length = 0;
-        public uint paramSize = 0;
-        public uint bits = 0;
+        public string Source = "";
+        public PDBType Type = new();
+        public uint Segment = 0;
+        public uint Offset = 0;
+        public uint Length = 0;
+        public uint ParamSize = 0;
+        public uint Bits = 0;
         public List<PDBLine> Lines = new();
     }
 }

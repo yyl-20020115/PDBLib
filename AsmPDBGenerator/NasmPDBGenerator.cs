@@ -69,13 +69,13 @@ namespace AsmPDBGenerator
                         {
                             if(location is YamlMappingNode loc)
                             {
-                                if(uint.TryParse((string?)loc["file-offset"] ?? "", out var file_offset)
+                                if(uint.TryParse((string?)loc["code-offset"] ?? "", out var code_offset)
                                     && uint.TryParse((string?)loc["line-number"]??"",out var line_number))
                                 {
                                     //line number is related to function start line
                                     //however we only have one function for Nasm.
                                     this.function.Lines.Add(new PDBLine
-                                        { CodeOffset = file_offset, LineNumber = line_number });
+                                        { CodeOffset = code_offset, LineNumber = line_number });
                                 }
                             }
                         }
@@ -100,10 +100,10 @@ namespace AsmPDBGenerator
                     if(type=="PROC" || type=="CODE")
                     {
                         this.function.Name = name; //this is the single name, maybe main
-                        uint.TryParse(section, out this.function.segment);
-                        uint.TryParse(offset, out this.function.offset);
-                        uint.TryParse(size, out this.function.length);
-                        uint.TryParse(bits, out this.function.bits);
+                        uint.TryParse(section, out this.function.Segment);
+                        uint.TryParse(offset, out this.function.Offset);
+                        uint.TryParse(size, out this.function.Length);
+                        uint.TryParse(bits, out this.function.Bits);
 
                         if (bits == "32")
                         {

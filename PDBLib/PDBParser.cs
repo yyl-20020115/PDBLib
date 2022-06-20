@@ -72,7 +72,7 @@ namespace PDBLib
 						? Path.ChangeExtension(path, ".dll")
 						: string.Empty;
 
-					return this.ReadRootStream();
+					return this.LoadRootStream();
 				}
 			}
 			return false;
@@ -102,21 +102,24 @@ namespace PDBLib
 				doc.Modules = this.modules.Select(m => 
 					new PDBModule() { 
 						ModuleName = m.ModuleName, 
-						ObjectName = m.ObjectName }).ToList();
+						ObjectName = m.ObjectName,
+						FunctionNames = new (m.Functions.Select(f=>f.Name)),
+						Sources = new (m.Sources)}).ToList();
 				doc.Functions = this.functions.Select(f => new PDBFunction() { 
 					 Type = Utils.ToPDBType(f.TypeIndex, this.types),
 					 Name = f.Name,
-					 offset = f.Offset,
-					 length = f.Length,
-					 paramSize = f.ParamSize,
-					 segment = f.Segment,
-					 fileIndex = f.FileIndex,
+					 Offset = f.Offset,
+					 Length = f.Length,
+					 ParamSize = f.ParamSize,
+					 Segment = f.Segment,
+					 Source = f.Source,
 					 Lines  = new List<PDBLine>(f.Lines.Select(l=>new PDBLine() {
 						 CodeOffset = l.offset, //within function
 						 LineNumber = (l.flags & (uint)CV_Line_Flags.linenumStart), 
 						 DeltaLineEnd = (byte)((l.flags & (uint)CV_Line_Flags.deltaLineEnd)>>24),
-						 IsStatement = (l.flags & (uint)CV_Line_Flags.fStatement)!=0}))
+						 IsExpression = (l.flags & (uint)CV_Line_Flags.fStatement)==0}))
 				}).ToList();
+				doc.SectionHeaders = new (this.sections);
 			}
 			return doc;
         }
@@ -158,13 +161,6 @@ namespace PDBLib
 				this.ReadSectionHeaders(this.dbi_debug_header.sectionHdr, this.sections);
 			}
 
-			//load files
-			uint id = 1;
-			foreach (var mod in this.modules)
-			{
-				if (mod.Info.stream < 0) continue;
-				GetModuleFiles(mod.Info, ref id, unique, mod.SrcIndex);
-			}
 
 			//load names
 			if (this.LoadNameStream(this.names))
@@ -185,6 +181,14 @@ namespace PDBLib
 				}
 			}
 
+			//load files
+			uint id = 1;
+			foreach (var module in this.modules)
+			{
+				if (module.Info.stream < 0) continue;
+				this.GetModuleFiles(module,ref id, unique, module.SrcIndex,this.names.Dict);
+			}
+
 			//load types
 			this.types = LoadTypeStream();
 
@@ -193,28 +197,28 @@ namespace PDBLib
 				return false;
 
 			//load global functions
-			GetGlobalFunctions((ushort)this.dbi_header.symRecordStream, sections, globals, this.others);
+			this.GetGlobalFunctions((ushort)this.dbi_header.symRecordStream, sections, globals, this.others);
 
-			foreach (var mod in modules)
+			foreach (var module in modules)
 			{
-				GetModuleFunctions(mod.Info, functions);
+				this.GetModuleFunctions(module, functions);
 			}
 
 			functions.Sort();
 
-			foreach (var mod in modules)
+			foreach (var module in modules)
 			{
-				ResolveFunctionLines(mod.Info, functions, unique, mod.SrcIndex);
+				this.ResolveFunctionLines(module.Info, functions, unique, module.SrcIndex,this.names.Dict);
 			}
 
 			if (this.dbi_debug_header.FPO != 0xffff)
 			{
-				ReadFPO(this.dbi_debug_header.FPO, fpov1Data);
+				this.ReadFPO(this.dbi_debug_header.FPO, fpov1Data);
 			}
 
 			if (this.dbi_debug_header.newFPO != 0xffff)
 			{
-				ReadFPO(this.dbi_debug_header.newFPO, fpov2Data);
+				this.ReadFPO(this.dbi_debug_header.newFPO, fpov2Data);
 			}
 
 			// We cheat in the Function < operator so that we can sort
@@ -236,11 +240,11 @@ namespace PDBLib
 				if (func.Segment == 0xffffffff)
 					continue;
 				func.Offset += sections[(int)func.Segment - 1].VirtualAddress;
-				if (!UpdateParamSize(func, fpov2Data))
+				if (!this.UpdateParamSize(func, fpov2Data))
 				{
-					if (!UpdateParamSize(func, fpov1Data))
+					if (!this.UpdateParamSize(func, fpov1Data))
 					{
-						UpdateParamSize(func, globals);
+						this.UpdateParamSize(func, globals);
 					}
 				}
 			}
@@ -248,7 +252,7 @@ namespace PDBLib
 			return true;
 		}
 
-		public bool ReadRootStream()
+		public bool LoadRootStream()
 		{
 			if (this.pdb_header.signature.SequenceEqual(PDBConsts.SignatureBytes))
 			{
@@ -636,7 +640,8 @@ namespace PDBLib
 				}
 			}
 		}
-		public void ResolveFiles(ref uint id, PDBStreamReader reader, int sig, uint end, Dictionary<uint, UniqueSrc> unique, Dictionary<uint, uint> fileIndices)
+		public void ResolveFiles(ref uint id, PDBStreamReader reader, int sig, uint end,
+			Dictionary<uint, UniqueSrc> unique, Dictionary<uint, uint> fileIndices, List<uint> related_ids)
 		{
 			uint index = reader.Offset;
 
@@ -647,6 +652,7 @@ namespace PDBLib
 
 				if (!unique.TryGetValue(fileChk.name, out var fiter))
 				{
+					related_ids.Add(fileChk.name);
 					var fileid = unique[fileChk.name] = new UniqueSrc();
 					fileid.Id = id++;
 				}
@@ -663,10 +669,13 @@ namespace PDBLib
 
 		}
 
-		public bool GetModuleFiles(DBIModuleInfo module, ref uint id, Dictionary<uint, UniqueSrc> unique, Dictionary<uint, uint> fileIndices)
+		public bool GetModuleFiles(Module module, ref uint id, Dictionary<uint, UniqueSrc> unique,
+			Dictionary<uint, uint> fileIndices,
+			Dictionary<uint,string> names)
 		{
+			DBIModuleInfo info = module.Info;
 			int section = (int)Subsection.FileChecksums;
-			var pair = GetStream((uint)module.stream)!;
+			var pair = GetStream((uint)info.stream)!;
 
 			PDBStreamReader reader = new(pair, this);
 			var sig = reader.Read<int>();
@@ -675,9 +684,9 @@ namespace PDBLib
 				return false;
 
 			// Skip functions
-			reader.Seek((uint)(module.cbSyms + module.cbOldLines));
-			uint endOffset = reader.Offset + (uint)module.cbLines;
-
+			reader.Seek((uint)(info.cbSyms + info.cbOldLines));
+			uint endOffset = reader.Offset + (uint)info.cbLines;
+			var related_ids = new List<uint>();
 			while (reader.Offset < endOffset)
 			{
 				var header = reader.Read<SubsectionHeader>();
@@ -689,20 +698,28 @@ namespace PDBLib
 
 				if (header.Sig == section)
                 {
-					ResolveFiles(ref id,reader, sig, end, unique, fileIndices);
+					this.ResolveFiles(ref id,reader, sig, end, unique, fileIndices, related_ids);
 				}
 
 				reader.Seek(end);
 
 				reader.Align(4);
 			}
+			foreach(var rid in related_ids)
+            {
+				if(names.TryGetValue(rid,out var name))
+                {
+					module.Sources.Add(name);
+                }
+            }
 			return true;
 
 		}
 
-		public bool GetModuleFunctions(DBIModuleInfo module, List<FunctionRecord> funcs)
+		public bool GetModuleFunctions(Module module, List<FunctionRecord> funcs)
 		{
-			var pair = GetStream((uint)module.stream)!;
+			var info = module.Info;
+			var pair = GetStream((uint)info.stream)!;
 
 			PDBStreamReader reader = new(pair, this);
 			var sig = reader.Read<int>();
@@ -710,8 +727,7 @@ namespace PDBLib
 			if (sig != 4)
 				return false;
 
-
-			uint end = (uint)module.cbSyms;
+			uint end = (uint)info.cbSyms;
 
 			while (reader.Offset < end)
 			{
@@ -727,13 +743,14 @@ namespace PDBLib
 							var proc = reader.Read<ProcSym32>();
 							var name = reader.ReadString();
 
-							FunctionRecord rec = new(name);
+							var rec = new FunctionRecord(name);
 							rec.Offset = proc.off;
 							rec.Segment = proc.seg;
 							rec.Length = proc.len;
 							rec.TypeIndex = proc.typind;
 
 							funcs.Add(rec);
+							module.Functions.Add(rec);
 						}
 						break;
 					case SymbolDefs.S_THUNK32:
@@ -741,15 +758,17 @@ namespace PDBLib
 							var thunk = reader.Read<ThunkSym32>();
 							var name = reader.ReadString();
 
-							FunctionRecord rec = new(name);
+							var rec = new FunctionRecord(name);
 							rec.Offset = thunk.off;
 							rec.Segment = thunk.seg;
 							rec.Length = thunk.parent != 0 ? (uint)thunk.len : 0;
 
 							funcs.Add(rec);
+							module.Functions.Add(rec);
 						}
 						break;
 					default:
+						//things other than functions are skipped
 						break;
 				}
 
@@ -759,13 +778,13 @@ namespace PDBLib
 		}
 
 		public bool ResolveFunctionLines(DBIModuleInfo module, List<FunctionRecord> funcs,
-			Dictionary<uint, UniqueSrc> unique, Dictionary<uint, uint> fileIndex)
+			Dictionary<uint, UniqueSrc> unique, Dictionary<uint, uint> fileIndices,Dictionary<uint,string> names)
 		{
 			int section = (int)Subsection.Lines;
 
 			var pair = GetStream((uint)module.stream)!;
 
-			PDBStreamReader reader = new(pair, this);
+			var reader = new PDBStreamReader(pair, this);
 			var sig = reader.Read<int>();
 
 			if (sig != 4)
@@ -786,7 +805,7 @@ namespace PDBLib
 
 				if (header.Sig == section)
                 {
-					ResolveLines(reader,sig,end,funcs,unique,fileIndex);
+					this.ResolveLines(reader,sig,end,funcs,unique,fileIndices,names);
 				}
 
 				reader.Seek(end);
@@ -797,7 +816,8 @@ namespace PDBLib
 
 		}
 
-		protected void ResolveLines(PDBStreamReader reader, int sig, uint end, List<FunctionRecord> funcs, Dictionary<uint, UniqueSrc> unique, Dictionary<uint, uint> fileIndex)
+		protected void ResolveLines(PDBStreamReader reader, int sig, uint end, List<FunctionRecord> funcs, Dictionary<uint, UniqueSrc> unique, 
+			Dictionary<uint, uint> fileIndices, Dictionary<uint,string> names)
 		{
 			var line_section = reader.Read<CV_LineSection>();
 
@@ -822,37 +842,38 @@ namespace PDBLib
 			var srcfile = reader.Read<CV_SourceFile>();
 
 			// First find the module specific file offset
-			var fileChk = fileIndex[srcfile.index];
+			var fileChk = fileIndices[srcfile.index];
 
 			// Next get the unique id that is paired with that particular file
-			function.FileIndex = unique[fileChk].Id;
-
+			var fid = unique[fileChk].Id;
+			if(names.TryGetValue(fid,out var name))
+            {
+				function.Source = name;
+            }
 			function.LineCount = srcfile.count;
 			function.LineOffset = line_section.off;
 
 			if (function.LineCount > 0)
             {
+				function.Lines.Clear();
 				function.Lines.AddRange(reader.Reads<CV_Line>(srcfile.count));				
 			}
 
 			// Mark that the function has been encountered
-			function.LineProcessed = true;
 
 		}
 		protected bool UpdateParamSize(FunctionRecord func, Dictionary<(uint, uint), FPO_DATA> fpoData)
 		{
-			var p = (func.Offset, func.Length);
-			if (fpoData.TryGetValue(p,out var it))
+			if (fpoData.TryGetValue((func.Offset, func.Length), out var it))
 			{
-				UpdateParamSize(func, it);
+				this.UpdateParamSize(func, it);
 				return true;
 			}
 			return false;
 		}
 		protected bool UpdateParamSize(FunctionRecord func, Dictionary<(uint, uint), FPO_DATA_V2> fpoData)
 		{
-			var p = (func.Offset, func.Length);
-			if (fpoData.TryGetValue(p, out var it))
+			if (fpoData.TryGetValue((func.Offset, func.Length), out var it))
 			{
 				UpdateParamSize(func, it);
 				return true;
