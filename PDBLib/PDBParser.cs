@@ -74,18 +74,42 @@ namespace PDBLib
 			}
 			return false;
 		}
+
 		public PDBDocument Parse()
         {
 			var doc = new PDBDocument();
             if (this.ParseInternal())
             {
+				uint ln = 1;
 				doc.Names = new(this.names.Dict.Values);
-				//TODO:
-				doc.Globals = new();
-				doc.Types = this.types.Select(t => Utils.StringizeTypeFast(t.Key, this.types, 0)).ToList();
-				doc.Modules = this.modules.Select(m => new PDBModule() { ModuleName = m.ModuleName, ObjectName = m.ObjectName }).ToList();
-				//TODO:functions
-				doc.Functions = this.functions.Select(f => new PDBFunction()).ToList();
+				doc.Globals = this.globals.Values.Select(g => new PDBGlobal()
+				{
+					Name = g.Item1,
+					Offset = g.Item2.offset,
+					Segment = g.Item2.segment,
+					Type = new PDBType()
+					{
+						TypeName = ((TYPE_ENUM)g.Item2.symType).ToString(),
+						TypeLeaf = ((LEAF)g.Item2.leafType).ToString()
+					}
+				}).ToList();
+				
+				doc.Types = this.types.Select(t => Utils.ToPDBType(t.Key, this.types)).ToList();
+				doc.Modules = this.modules.Select(m => 
+					new PDBModule() { 
+						ModuleName = m.ModuleName, 
+						ObjectName = m.ObjectName }).ToList();
+				doc.Functions = this.functions.Select(f => new PDBFunction() { 
+					 Name = f.Name,
+					 offset = f.Offset,
+					 length = f.Length,
+					 paramSize = f.ParamSize,
+					 segment = f.Segment,
+					 fileIndex = f.FileIndex,
+					 typeIndex = f.TypeIndex,
+					 Lines  = new List<PDBLine>(f.Lines.Select(l=>new PDBLine() { 
+						 Flags=l.flags, CodeOffset=l.offset,LineNumber=ln++ }) )
+				}).ToList();
 			}
 			return doc;
         }
@@ -792,7 +816,9 @@ namespace PDBLib
 			function.LineOffset = line_section.off;
 
 			if (function.LineCount > 0)
-				function.Lines = reader.ReadBytes((int)srcfile.count * Marshal.SizeOf<CV_Line>());
+            {
+				function.Lines.AddRange(reader.Reads<CV_Line>(srcfile.count));				
+			}
 
 			// Mark that the function has been encountered
 			function.LineProcessed = true;

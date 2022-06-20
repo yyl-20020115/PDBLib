@@ -45,13 +45,16 @@
     public class PDBType
     {
         public string TypeName = "";
-        public string TypeVal = "";
-        public string Value = "";
+        public string TypeLeaf = "";
+        public bool IsPointer = false;
+        public Dictionary<string, string> Values =new();
+        public Dictionary<string, PDBType> SubTypes = new();
     }
     public class PDBLine
     {
         public uint CodeOffset = 0;
         public uint LineNumber = 0;
+        public uint Flags = 0;
     }
 
     public class PDBModule

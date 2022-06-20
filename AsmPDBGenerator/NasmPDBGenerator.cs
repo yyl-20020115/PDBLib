@@ -4,7 +4,25 @@ namespace AsmPDBGenerator
 {
     public class NasmPDBGenerator : IPDBGenerator
     {
+        public static readonly Dictionary<string, string> Table = new()
+        {
+            ["NONE"] = "T_NOTYPE",
+            ["BYTE"] = "T_UINT1",
+            ["WORD"] = "T_UINT2",
+            ["DWORD"] = "T_UINT4",
+            ["QUAD"] = "T_UINT8",
+            ["REAL32"] = "T_REAL32",
+            ["REAL64"] = "T_REAL64",
+            ["REAL80"] = "T_REAL80",
+            ["REAL128"] = "T_REAL128",
+            ["REAL256"] = "T_REAL256",
+            ["REAL512"] = "T_REAL512",
+        };
+        public static string ConvertTypeName(string type)
+            => Table.TryGetValue(type, out var ret) ? ret : "T_NOTYPE";
+
         public const string NasmCreator = "The Netwide Assembler";
+        public const string NasmLanguage = "ASM";
         public PDBDocument PDBDocument => this.document;
         public PDBModule PDBModule => this.module;
         public PDBFunction PDBFunction => this.function;
@@ -24,13 +42,13 @@ namespace AsmPDBGenerator
             if(info is YamlMappingNode mapping)
             {
                 var creator = (string?)mapping["creator"] ?? "";
-                if (creator.StartsWith(NasmCreator))
+                var language = (string?)mapping["language"] ?? "";
+                if (creator.StartsWith(NasmCreator) && NasmLanguage == language)
                 {
                     document.Creator = creator;
+                    document.Language = language;
                     document.Version = (string?)mapping["version"] ?? "";
-                    document.Language = (string?)mapping["language"] ?? "";
                     document.Machine = (string?)mapping["machine"] ?? "";
-
                     module.ModuleName = (string?)mapping["output"] ?? "";
                     return true;
                 }
@@ -63,22 +81,6 @@ namespace AsmPDBGenerator
                 }
             }
         }
-        public static readonly Dictionary<string, string> Table = new()
-        {
-            ["NONE"] = "T_NOTYPE",
-            ["BYTE"] = "T_UINT1",
-            ["WORD"] = "T_UINT2",
-            ["DWORD"] = "T_UINT4",
-            ["QUAD"] = "T_UINT8",
-            ["REAL32"] = "T_REAL32",
-            ["REAL64"] = "T_REAL64",
-            ["REAL80"] = "T_REAL80",
-            ["REAL128"] = "T_REAL128",
-            ["REAL256"] = "T_REAL256",
-            ["REAL512"] = "T_REAL512",
-        };
-        protected string ConvertTypeName(string type)
-            => Table.TryGetValue(type, out var ret) ? ret : "T_NOTYPE";
         protected void ProcessSymbols(YamlNode symbols)
         {
             if(symbols is YamlSequenceNode sequence)

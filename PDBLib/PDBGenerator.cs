@@ -54,7 +54,7 @@ namespace PDBLib
             //TODO:
             this.pdb_header.directorySize = 0;
             this.pdb_header.reserved = 0;
-            
+            //write pdb header
             writer.Write(this.pdb_header);
 
 
@@ -65,10 +65,7 @@ namespace PDBLib
                 s.Complete();
                 writer.Write(s.ToArray());
             }
-            return false;
+            return true;
         }
-
-
-
     }
 }

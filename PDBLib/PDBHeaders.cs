@@ -653,6 +653,10 @@ namespace PDBLib
 		LF_COMPLEX128 = 0x800f,
 		LF_VARSTRING = 0x8010,
 
+		//NOTICE: added by Yilin
+		LF_REAL256 = 0x8011,
+		LF_REAL512 = 0x8012,
+
 		LF_OCTWORD = 0x8017,
 		LF_UOCTWORD = 0x8018,
 

@@ -71,7 +71,7 @@ namespace PDBLib
 	public class FunctionRecord : IComparable<FunctionRecord>
 	{
 		public string Name = "";
-		public byte[] Lines = Array.Empty<byte>();
+		public List<CV_Line> Lines = new();
 		public uint LineCount = 0;
 		public uint Segment = 0;
 		public uint Offset = 0;
