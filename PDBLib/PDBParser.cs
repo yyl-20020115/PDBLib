@@ -343,14 +343,14 @@ namespace PDBLib
 
 				uint numOk = 0;
 				{
-					PDBStreamReader nameReader = new(streams[1], this);
+					var nameReader = new PDBStreamReader(streams[1], this);
 
 					var nameIndexHeader = nameReader.Read<NameIndexHeader>();
 					this.m_guid = nameIndexHeader.guid;
 
 					var nameStart = nameReader.Offset;
 
-					PDBStreamReader mapReader = new(streams[1], this);
+					var mapReader = new PDBStreamReader(streams[1], this);
 					mapReader.Seek(nameStart + nameIndexHeader.names);
 
 					numOk = mapReader.Read<uint>();
@@ -385,11 +385,11 @@ namespace PDBLib
                         if (0 != (okBits[i >> 5] & (1 << (i % 32))))
                             continue;
 
-                        var val = mapReader.Read<StringVal>();
-						nameReader.Seek(nameStart + val.Id);
+                        var val = mapReader.Read<StringStreamIds>();
+						nameReader.Seek(nameStart + val.StringId);
 						var name = nameReader.ReadString().ToUpper();
 
-						name_indices.Add(name, val.Stream);
+						name_indices.Add(name, val.StreamId);
 						numOk--;
 					}
 				}
@@ -404,7 +404,7 @@ namespace PDBLib
 		// The name stream maps file indices with the path of the source file
 		public bool LoadNameStream(NameStream names)
 		{
-			if (name_indices.TryGetValue("/NAMES", out var idx))
+			if (name_indices.TryGetValue(PDBConsts.NameStreamName, out var idx))
 			{
 				var ns = GetStream(idx)!;
 				// Die in a fire microsoft.
@@ -417,12 +417,10 @@ namespace PDBLib
 				int last = ns.PageIndices.Count - 1;
 				for (int i = 0, end = last; i < end; ++i)
 				{
-					//memcpy(tempData + i * m_pageSize, m_base + ns.pageIndices[i] * m_pageSize, m_pageSize);
 					Array.Copy(this.buffer, ns.PageIndices[i] * this.page_size, names.Buffer, i * this.page_size, this.page_size);
 				}
 
 				// The last page may be shorter than the actual page size
-				//memcpy(tempData + last * m_pageSize, m_base + ns.pageIndices[last] * m_pageSize, std::min(m_pageSize, ns.size - last * m_pageSize));
 				Array.Copy(this.buffer, ns.PageIndices[last] * this.page_size, names.Buffer, last * this.page_size, Math.Min( this.page_size, ns.Size- last*this.page_size));
 
 				var nsh = Utils.From<NameStreamHeader>(names.Buffer);
@@ -462,7 +460,7 @@ namespace PDBLib
 			var ts = GetStream(KnownStreams.TypeInfoStream)!;
 			if (ts.Size == 0) return new();
 
-			PDBStreamReader reader = new(ts, this);
+			var reader = new PDBStreamReader(ts, this);
 
 			this.type_info_header = reader.Read<TypeInfoHeader>();
 
@@ -506,29 +504,34 @@ namespace PDBLib
 						}
 						break;
 					case LEAF.LF_ARRAY:
-						nfo.Data = reader.ReadBytes(Marshal.SizeOf<LeafArray>());
+						nfo.Data = reader.ReadBytes(record.length - sizeof(ushort));
+						//nfo.Data = reader.ReadBytes(Marshal.SizeOf<LeafArray>());
 						break;
 					case LEAF.LF_CLASS:
 					case LEAF.LF_STRUCTURE:
 						{
+							//TODO: details
 							reader.Seek(reader.Offset + (uint)Marshal.SizeOf<LeafClass>() + sizeof(ushort));
 							nfo.Name = reader.ReadString();
 						}
 						break;
 					case LEAF.LF_UNION:
 						{
+							//TODO: details
 							reader.Seek(reader.Offset + (uint)Marshal.SizeOf<LeafUnion>() + sizeof(ushort));
 							nfo.Name = reader.ReadString();
 						}
 						break;
 					case LEAF.LF_ENUM:
 						{
+							//TODO: details
 							reader.Seek(reader.Offset + (uint)Marshal.SizeOf<LeafEnum>());
 							nfo.Name = reader.ReadString();
 						}
 						break;
 					case LEAF.LF_ALIAS:
 						{
+							//TODO: details
 							reader.Seek(reader.Offset + (uint)Marshal.SizeOf<LeafAlias>());
 							nfo.Name = reader.ReadString();
 						}
@@ -555,7 +558,7 @@ namespace PDBLib
 		{
 			var hs = GetStream(headerStream)!;
 
-			PDBStreamReader reader = new(hs, this);
+			var reader = new PDBStreamReader(hs, this);
 
 			while (reader.Offset < hs.Size)
 			{
@@ -566,7 +569,7 @@ namespace PDBLib
 		{
 			var fs = GetStream(fpoStream)!;
 
-			PDBStreamReader reader = new(fs, this);
+			var reader = new PDBStreamReader(fs, this);
 
 			var last = new FPO_DATA();
 			while (reader.Offset < fs.Size)
@@ -585,7 +588,7 @@ namespace PDBLib
 		{
 			var fs = GetStream(fpoStream)!;
 
-			PDBStreamReader reader = new(fs, this);
+			var reader = new PDBStreamReader(fs, this);
 
 			var last = new FPO_DATA_V2();
 			while (reader.Offset < fs.Size)
@@ -606,7 +609,7 @@ namespace PDBLib
 			Dictionary<string,GlobalRecord> others)
 		{
 			var pair = GetStream(symRecStream)!;
-			PDBStreamReader reader = new(pair, this);
+			var reader = new PDBStreamReader(pair, this);
 
 			while (reader.Offset < pair.Size)
 			{
@@ -615,7 +618,7 @@ namespace PDBLib
 				if (len >= gcs)
 				{
 					var rec = reader.Read<GlobalRecord>();
-					var name = Encoding.Latin1.GetString(reader.ReadBytes(len - gcs)).TrimEnd('\0');
+					var name = PDBConsts.DefaultEncoding.GetString(reader.ReadBytes(len - gcs)).TrimEnd('\0');
 
 					if (rec.symType == 2)
 					{
@@ -635,6 +638,7 @@ namespace PDBLib
 				}
 				else
 				{
+					//TODO: how about other formats?
 					// Just skip this data, we don't know how to handle it.
 					reader.Seek(reader.Offset + len);
 				}
@@ -673,11 +677,11 @@ namespace PDBLib
 			Dictionary<uint, uint> fileIndices,
 			Dictionary<uint,string> names)
 		{
-			DBIModuleInfo info = module.Info;
+			var info = module.Info;
 			int section = (int)Subsection.FileChecksums;
 			var pair = GetStream((uint)info.stream)!;
 
-			PDBStreamReader reader = new(pair, this);
+			var reader = new PDBStreamReader(pair, this);
 			var sig = reader.Read<int>();
 
 			if (sig != 4)
@@ -721,7 +725,7 @@ namespace PDBLib
 			var info = module.Info;
 			var pair = GetStream((uint)info.stream)!;
 
-			PDBStreamReader reader = new(pair, this);
+			var reader = new PDBStreamReader(pair, this);
 			var sig = reader.Read<int>();
 
 			if (sig != 4)
@@ -733,7 +737,7 @@ namespace PDBLib
 			{
 				var header = reader.Read<SymbolHeader>();
 
-				uint offsetBeg = reader.Offset - sizeof(ushort);
+				uint start_offset = reader.Offset - sizeof(ushort);
 
 				switch ((SymbolDefs)header.Type)
 				{
@@ -768,11 +772,12 @@ namespace PDBLib
 						}
 						break;
 					default:
+						//TODO: how about other formats?
 						//things other than functions are skipped
 						break;
 				}
 
-				reader.Seek(offsetBeg + header.Size);
+				reader.Seek(start_offset + header.Size);
 			}
 			return true;
 		}
@@ -858,9 +863,6 @@ namespace PDBLib
 				function.Lines.Clear();
 				function.Lines.AddRange(reader.Reads<CV_Line>(srcfile.count));				
 			}
-
-			// Mark that the function has been encountered
-
 		}
 		protected bool UpdateParamSize(FunctionRecord func, Dictionary<(uint, uint), FPO_DATA> fpoData)
 		{

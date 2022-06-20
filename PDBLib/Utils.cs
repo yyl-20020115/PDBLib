@@ -138,10 +138,10 @@ namespace PDBLib
                             ret.SubTypes.Add("elemtype",tp);
                             // According to the comments, if this value is less than 0x8000 then
                             // the next 2 bytes are the actual value
-                            if (la.idxtype < 0x8000 && data.Length>= Marshal.SizeOf<LeafArray>()+2)
+                            var header_size = Marshal.SizeOf<LeafArray>();
+                            if (la.idxtype < 0x8000 && data.Length>= header_size)
                             {
-                                ret.Values.Add("value",String.Format("{0:X4}", 
-                                    BitConverter.ToUInt16(data, Marshal.SizeOf<LeafArray>())));
+                                ret.Values.Add("value", string.Join(',', ToHex(data[header_size..])));
                             }
                             else
                             {
@@ -177,7 +177,7 @@ namespace PDBLib
                     case LEAF.LF_CLASS:
                     case LEAF.LF_STRUCTURE:
                         {
-                            ret.Values.Add("value",string.Join(',', ToHex(ti.Data)));
+                            ret.Values.Add("value",string.Join(',', ToHex(data)));
                         }
                         break;
                     case LEAF.LF_CHAR:
@@ -224,22 +224,22 @@ namespace PDBLib
                         break;
                     case LEAF.LF_REAL80:
                         {
-                            ret.Values.Add("value", string.Join(',', ToHex(ti.Data)));
+                            ret.Values.Add("value", string.Join(',', ToHex(data)));
                         }
                         break;
                     case LEAF.LF_REAL128:
                         {
-                            ret.Values.Add("value", string.Join(',', ToHex(ti.Data)));
+                            ret.Values.Add("value", string.Join(',', ToHex(data)));
                         }
                         break;
                     case LEAF.LF_REAL256:
                         {
-                            ret.Values.Add("value", string.Join(',', ToHex(ti.Data)));
+                            ret.Values.Add("value", string.Join(',', ToHex(data)));
                         }
                         break;
                     case LEAF.LF_REAL512:
                         {
-                            ret.Values.Add("value", string.Join(',', ToHex(ti.Data)));
+                            ret.Values.Add("value", string.Join(',', ToHex(data)));
                         }
                         break;
                     case LEAF.LF_QUADWORD:
@@ -256,7 +256,7 @@ namespace PDBLib
                         break;
                     default:
                         {
-                            ret.Values.Add("value", string.Join(',', ToHex(ti.Data)));
+                            ret.Values.Add("value", string.Join(',', ToHex(data)));
                         }
                         break;
                 }

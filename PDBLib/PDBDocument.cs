@@ -49,6 +49,17 @@
         public bool IsPointer = false;
         public Dictionary<string, string> Values =new();
         public Dictionary<string, PDBType> SubTypes = new();
+        public HashSet<string> Collect(HashSet<string>? texts = null)
+        {
+            texts ??= new();
+            texts.Add(this.TypeName);
+            foreach(var st in this.SubTypes)
+            {
+                texts.Add(st.Key);
+                st.Value.Collect(texts);
+            }
+            return texts;
+        }
     }
     public class PDBLine
     {

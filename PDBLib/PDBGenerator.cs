@@ -22,11 +22,55 @@ namespace PDBLib
         protected Dictionary<uint, UniqueSrc> unique = new();
         protected Dictionary<string, uint> name_indices = new();
         protected List<PDBStreamWriter> streams = new();
+
+        protected uint uid = 0;
+        protected void RegisterStrings(params string[] texts)
+        {
+            this.RegisterStrings(texts as IEnumerable<string>);
+        }
+        protected void RegisterStrings(IEnumerable<string> texts)
+        {
+            foreach(var text in texts)
+            {
+                this.RegisterString(text);
+            }
+        }
+        protected uint RegisterString(string text)
+        {
+            if(!this.name_indices.TryGetValue(text,out var id))
+            {
+                this.name_indices.Add(text, id = uid++);
+            }
+            return id;
+        }
+        protected void RegisterStrings(PDBDocument doc)
+        {
+            this.RegisterString(PDBConsts.NameStreamName);
+            this.RegisterString(doc.Creator);
+            this.RegisterString(doc.Version);
+            this.RegisterString(doc.Language);
+            this.RegisterString(doc.Machine);
+            doc.Names.ForEach(n => this.RegisterString(n));
+            doc.Globals.ForEach(g => this.RegisterStrings(g.Name, g.SymType, g.LeafType));
+            doc.Modules.ForEach(m => { 
+                this.RegisterStrings(m.ModuleName); 
+                this.RegisterStrings(m.Sources);
+                this.RegisterStrings(m.FunctionNames); 
+            });
+            doc.Functions.ForEach(f => this.RegisterStrings(f.Name,f.Source));
+            doc.Types.ForEach(t => this.RegisterStrings(t.Collect()));
+        }
         public bool Load(PDBDocument doc)
         {
             //setup streams
             if (doc != null)
             {
+                this.RegisterStrings(doc);
+
+
+
+
+
                 //TODO:
                 return true;
             }

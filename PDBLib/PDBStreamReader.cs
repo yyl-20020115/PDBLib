@@ -109,7 +109,7 @@ namespace PDBLib
             {
 				buffer.WriteByte(b);
             }
-			return Encoding.Latin1.GetString(buffer.ToArray());
+			return PDBConsts.DefaultEncoding.GetString(buffer.ToArray());
 		}	
 	}
 

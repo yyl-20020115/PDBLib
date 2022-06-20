@@ -4,8 +4,10 @@ namespace PDBLib
 {
     public static class PDBConsts
 	{
+		public static Encoding DefaultEncoding = Encoding.Latin1;
 		public static string Signature = "Microsoft C/C++ MSF 7.00\r\n"+((char)26)+"DS\0\0\0";
-		public static readonly byte[] SignatureBytes = Encoding.Latin1.GetBytes(Signature);
+		public static byte[] SignatureBytes = DefaultEncoding.GetBytes(Signature);
+		public const string NameStreamName = "/NAMES";
 	}
 	public struct TypeInfo
 	{
@@ -32,10 +34,10 @@ namespace PDBLib
 		public int Offset;
 	}
 
-	public struct StringVal
+	public struct StringStreamIds
 	{
-		public uint Id;
-		public uint Stream;
+		public uint StringId;
+		public uint StreamId;
 	};
 
 	public class UniqueSrc
