@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "PDBWriter": {
+      "commandName": "Project",
+      "commandLineArgs": "basic64.yml",
+      "workingDirectory": "..\\testing\\testdata\\windows"
+    }
+  }
+}

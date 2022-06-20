@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "PDBDumper": {
+      "commandName": "Project",
+      "commandLineArgs": "basic64.pdb",
+      "workingDirectory": "..\\testing\\testdata\\windows"
+    }
+  }
+}
