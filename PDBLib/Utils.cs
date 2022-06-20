@@ -70,7 +70,9 @@ namespace PDBLib
         }
         public static IEnumerable<string> ToHex(IEnumerable<byte> bytes) 
             => bytes!=null ? from b in bytes
-               select string.Format("{0:X2}", b):new string[0];
+               select string.Format("{0:X2}", b):Array.Empty<string>();
+        public static string ToTypeName(uint type, Dictionary<uint, TypeInfo> type_info)
+            => type_info.TryGetValue(type, out var ti) ? ti.Name : (type==2?"T_FUNCTION":string.Format("T_TYPE_{0:X8}", type));
 
         public static PDBType ToPDBType(uint type, Dictionary<uint, TypeInfo> type_info)
         {

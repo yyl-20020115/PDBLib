@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
+using System.Linq;
 namespace PDBLib
 {
 	public class PDBParser
@@ -16,7 +17,9 @@ namespace PDBLib
 		public uint PageSize => this.page_size;
 
 		protected Dictionary<uint, (string, GlobalRecord)> globals = new();
-        protected List<FunctionRecord> functions = new();
+		protected Dictionary<string, GlobalRecord> others = new();
+
+		protected List<FunctionRecord> functions = new();
 		protected Dictionary<uint, TypeInfo> types = new();
 		protected List<Module> modules = new();
 		protected Dictionary<(uint, uint), FPO_DATA> fpov1Data = new();
@@ -81,13 +84,18 @@ namespace PDBLib
             if (this.ParseInternal())
             {
 				doc.Names = new(this.names.Dict.Values);
-				doc.Globals = this.globals.Values.Select(g => new PDBGlobal()
+				var gs = new Dictionary<string, GlobalRecord>();
+				foreach(var pair in this.globals.Values)
+                {
+					gs.Add(pair.Item1, pair.Item2);
+                }
+				doc.Globals = gs.Concat(this.others).Select(g => new PDBGlobal()
 				{
-					Name = g.Item1,
-					Offset = g.Item2.offset,
-					Segment = g.Item2.segment,
-					LeafType = g.Item2.leafType.ToString(),
-					SymType = g.Item2.symType.ToString(),
+					Name = g.Key,
+					Offset = g.Value.offset,
+					Segment = g.Value.segment,
+					LeafType = g.Value.leafType.ToString(),
+					SymType = Utils.ToTypeName(g.Value.symType,this.types),
 				}).ToList();
 				
 				doc.Types = this.types.Select(t => Utils.ToPDBType(t.Key, this.types)).ToList();
@@ -107,7 +115,7 @@ namespace PDBLib
 						 CodeOffset = l.offset, //within function
 						 LineNumber = (l.flags & (uint)CV_Line_Flags.linenumStart), 
 						 DeltaLineEnd = (byte)((l.flags & (uint)CV_Line_Flags.deltaLineEnd)>>24),
-						 IsStatement = (l.flags & (uint)CV_Line_Flags.fStatement)!=0,}))
+						 IsStatement = (l.flags & (uint)CV_Line_Flags.fStatement)!=0}))
 				}).ToList();
 			}
 			return doc;
@@ -185,7 +193,7 @@ namespace PDBLib
 				return false;
 
 			//load global functions
-			GetGlobalFunctions((ushort)this.dbi_header.symRecordStream, sections, globals);
+			GetGlobalFunctions((ushort)this.dbi_header.symRecordStream, sections, globals, this.others);
 
 			foreach (var mod in modules)
 			{
@@ -589,7 +597,9 @@ namespace PDBLib
 			}
 		}
 
-		public void GetGlobalFunctions(ushort symRecStream, List<IMAGE_SECTION_HEADER> headers, Dictionary<uint, (string,GlobalRecord)> globals)
+		public void GetGlobalFunctions(ushort symRecStream,
+			List<IMAGE_SECTION_HEADER> headers, Dictionary<uint, (string,GlobalRecord)> globals,
+			Dictionary<string,GlobalRecord> others)
 		{
 			var pair = GetStream(symRecStream)!;
 			PDBStreamReader reader = new(pair, this);
@@ -603,7 +613,6 @@ namespace PDBLib
 					var rec = reader.Read<GlobalRecord>();
 					var name = Encoding.Latin1.GetString(reader.ReadBytes(len - gcs)).TrimEnd('\0');
 
-					// Is function?
 					if (rec.symType == 2)
 					{
 						var rva = rec.offset + headers[rec.segment - 1].VirtualAddress;
@@ -611,7 +620,14 @@ namespace PDBLib
                         {
 							globals.Add(rva,(name,rec));
 						}
-					}
+                    }
+                    else
+                    {
+						if(!others.TryGetValue(name,out var _))
+                        {
+							others.Add(name, rec);
+						}
+                    }
 				}
 				else
 				{
