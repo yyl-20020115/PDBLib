@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PDBLib;
 using YamlDotNet.RepresentationModel;
-using PDBLib;
 namespace AsmPDBGenerator
 {
-    public class NasmPDBGenerator : IAsmPDBGenerator
+    public class NasmPDBGenerator : IPDBGenerator
     {
         public const string NasmCreator = "The Netwide Assembler";
         public PDBDocument PDBDocument => this.document;
@@ -68,11 +63,22 @@ namespace AsmPDBGenerator
                 }
             }
         }
-        protected string ConvertTypeName(string type)
+        public static readonly Dictionary<string, string> Table = new()
         {
-            //TODO:
-            return type;
-        }
+            ["NONE"] = "T_NOTYPE",
+            ["BYTE"] = "T_UINT1",
+            ["WORD"] = "T_UINT2",
+            ["DWORD"] = "T_UINT4",
+            ["QUAD"] = "T_UINT8",
+            ["REAL32"] = "T_REAL32",
+            ["REAL64"] = "T_REAL64",
+            ["REAL80"] = "T_REAL80",
+            ["REAL128"] = "T_REAL128",
+            ["REAL256"] = "T_REAL256",
+            ["REAL512"] = "T_REAL512",
+        };
+        protected string ConvertTypeName(string type)
+            => Table.TryGetValue(type, out var ret) ? ret : "T_NOTYPE";
         protected void ProcessSymbols(YamlNode symbols)
         {
             if(symbols is YamlSequenceNode sequence)
@@ -87,12 +93,13 @@ namespace AsmPDBGenerator
                     var stype = (string?)symbol["stype"] ?? "";
                     var bits = (string?)symbol["bits"] ?? "";
 
-                    if(type=="PROC")
+                    if(type=="PROC" || type=="CODE")
                     {
                         this.function.Name = name; //this is the single name, maybe main
                         uint.TryParse(section, out this.function.segment);
                         uint.TryParse(offset, out this.function.offset);
                         uint.TryParse(size, out this.function.length);
+                        uint.TryParse(bits, out this.function.bits);
 
                         if (bits == "32")
                         {
@@ -109,8 +116,8 @@ namespace AsmPDBGenerator
                         uint.TryParse(size, out var _size);
                         this.document.Globals.Add(
                             new PDBGlobal { Name = name, Offset=_offset,
-                                Segment = segment, Type = new(){ TypeName = ConvertTypeName(stype) }, 
-                                Size = _size == 0 ? (bits == "32"? 4u:8u) : _size
+                                Segment = segment, Type = new(){ TypeName = ConvertTypeName(stype) },
+                                SymType = type,
                             });
                     }
                 }
@@ -142,8 +149,9 @@ namespace AsmPDBGenerator
             }
             return false;
         }
-        public bool Generate(string pdb_path) 
+        public bool Generate(string pdb_path)
             => this.generator.Load(this.document) && this.generator.Generate(pdb_path);
-
+        public bool Generate(Stream stream)
+            => this.generator.Load(this.document) && this.generator.Generate(stream);
     }
 }

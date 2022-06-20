@@ -4,10 +4,6 @@ namespace PDBLib
 {
 	public class PDBParser
 	{
-		public static uint GetNumPages(uint length, uint pageSize)
-			=> length % pageSize != 0 ? (length / pageSize) + 1 : (length / pageSize);
-		public static uint GetAlignedLength(uint length, uint pageSize)
-			=> GetNumPages(length, pageSize) * pageSize;
 		public Dictionary<uint, (string, GlobalRecord)> Globals => globals;
 		public List<FunctionRecord> Functions => this.functions;
 		public List<Module> Modules => this.modules;
@@ -64,7 +60,7 @@ namespace PDBLib
 					this.page_size = (uint)pdb_header.pageSize;
 					this.page_used = (uint)pdb_header.pagesUsed; //this is all length of file in pages
 					this.buffer = Utils.ReadFile(path, (int)this.real_length,
-						new byte[GetAlignedLength((uint)this.real_length, this.page_size)]);
+						new byte[Utils.GetAlignedLength((uint)this.real_length, this.page_size)]);
 
 					this.exe_path =
 						File.Exists(Path.ChangeExtension(path, ".exe"))
@@ -226,8 +222,8 @@ namespace PDBLib
 			if (this.pdb_header.signature.SequenceEqual(PDBConsts.SignatureBytes))
 			{
 				var rootSize = (uint)this.pdb_header.directorySize;
-				var numRootPages = GetNumPages(rootSize, this.page_size);
-				var numRootIndexPages = GetNumPages(numRootPages * 4, this.page_size);
+				var numRootPages = Utils.GetNumPages(rootSize, this.page_size);
+				var numRootIndexPages = Utils.GetNumPages(numRootPages * 4, this.page_size);
 				int rootIndices = Marshal.SizeOf<PDBHeader>();
 				var rootPageList = new List<uint>();
 				for (int i = 0; i < numRootIndexPages; ++i)
@@ -280,7 +276,7 @@ namespace PDBLib
 				// since any data associated with a stream are not necessarily adjacent
 				for (int i = 0; i < numStreams; ++i)
 				{
-					var numPages = GetNumPages(streams[i].Size, this.page_size);
+					var numPages = Utils.GetNumPages(streams[i].Size, this.page_size);
 
 					if (numPages != 0)
 					{

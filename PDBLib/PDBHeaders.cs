@@ -454,10 +454,22 @@ namespace PDBLib
 		T_64PREAL80 = 0x0642,   // 64 bit pointer to 80 bit real
 
 		//  128 bit real types
-
+		//NOTICE: added by YILIN
 		T_REAL128 = 0x0043,   // 128 bit real
 		T_32PREAL128 = 0x0443,   // 32 bit pointer to 128 bit real
 		T_64PREAL128 = 0x0643,   // 64 bit pointer to 128 bit real
+
+		//NOTICE: added by YILIN
+		T_REAL256 = 0x0044,   // 256 bit real
+		T_32PREAL256 = 0x0444,   // 32 bit pointer to 256 bit real
+		T_64PREAL256 = 0x0644,   // 64 bit pointer to 256 bit real
+
+		//NOTICE: added by YILIN
+		T_REAL512 = 0x0045,   // 512 bit real
+		T_32PREAL512 = 0x0445,   // 32 bit pointer to 512 bit real
+		T_64PREAL512 = 0x0645,   // 64 bit pointer to 512 bit real
+
+
 
 		//  32 bit complex types
 

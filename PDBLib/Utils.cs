@@ -6,6 +6,11 @@ namespace PDBLib
 {
     public static class Utils
     {
+        public static uint GetNumPages(uint length, uint pageSize)
+            => length % pageSize != 0 ? (length / pageSize) + 1 : (length / pageSize);
+        public static uint GetAlignedLength(uint length, uint pageSize)
+            => GetNumPages(length, pageSize) * pageSize;
+
         public static string ReadString(byte[] bytes, int start)
         {
             var ret = new List<byte>();

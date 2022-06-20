@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AsmPDBGenerator
+namespace PDBLib
 {
-    public interface IAsmPDBGenerator
+    public interface IPDBGenerator
     {
-        bool Load(string yml);
-        bool Generate(string pdb);
+        bool Generate(string pdb_path);
+        bool Generate(Stream stream);
     }
 }

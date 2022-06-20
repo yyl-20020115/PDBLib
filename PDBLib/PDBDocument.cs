@@ -41,7 +41,6 @@
         public PDBType Type = new();
         public uint Offset = 0;
         public uint Segment = 0;
-        public uint Size = 0;
     }
     public class PDBType
     {
@@ -69,7 +68,7 @@
         public uint length = 0;
         public uint typeIndex = 0; // If this is non-zero, the function is a procedure, not a thunk (I don't know how to read thunk type info...)
         public uint paramSize = 0;
-
+        public uint bits = 0;
         public List<PDBLine> Lines = new();
     }
 }
