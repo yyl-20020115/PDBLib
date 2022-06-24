@@ -6,12 +6,12 @@ namespace PDBLib
 	public struct PDBHeader
 	{
 		[MarshalAs(UnmanagedType.ByValArray,SizeConst = 32)]
-		public byte[] signature;
-		public int pageSize;
-		public int freePageMap;
-		public int pagesUsed;
-		public int directorySize;
-		public uint reserved;
+		public byte[] Signature;
+		public int PageSize;
+		public int FreePageMapIndex;
+		public int PagesUsed;
+		public int DirectorySize;
+		public uint Reserved;
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]

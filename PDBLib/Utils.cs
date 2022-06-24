@@ -9,6 +9,10 @@ namespace PDBLib
             => length % pageSize != 0 ? (length / pageSize) + 1 : (length / pageSize);
         public static uint GetAlignedLength(uint length, uint pageSize)
             => GetNumPages(length, pageSize) * pageSize;
+        public static int GetNumPages(int length, int pageSize)
+            => length % pageSize != 0 ? (length / pageSize) + 1 : (length / pageSize);
+        public static int GetAlignedLength(int length, int pageSize)
+            => GetNumPages(length, pageSize) * pageSize;
 
         public static string ReadString(byte[] bytes, int start)
         {

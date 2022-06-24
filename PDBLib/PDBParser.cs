@@ -33,6 +33,7 @@ namespace PDBLib
 		protected string exe_path = "";
 		protected PDBHeader pdb_header = new();
 		protected DBIHeader dbi_header = new();
+		protected NameStreamHeader name_header = new ();
 		protected DBIDebugHeader dbi_debug_header = new();
 		protected TypeInfoHeader type_info_header = new();
 		protected List<IMAGE_SECTION_HEADER> sections = new();
@@ -42,7 +43,7 @@ namespace PDBLib
 
 		protected Guid m_guid = new();        //!< Unique GUID for the PDB, found in the NameIndexHeader in the root stream, matches the guid returned by IDiaSession::get_globalScope()->get_guid()
 
-		public StreamPair? GetStream(KnownStreams ks) => this.GetStream((uint)ks);
+		public StreamPair? GetStream(KnownStream ks) => this.GetStream((uint)ks);
 		public StreamPair? GetStream(uint index) => index<this.streams.Count ? this.streams[(int)index] : null;
 		public PDBParser()
 		{
@@ -60,8 +61,8 @@ namespace PDBLib
 				{
 					var header_bytes = Utils.ReadFile(path, header_size);
 					this.pdb_header = Utils.From<PDBHeader>(header_bytes);
-					this.page_size = (uint)pdb_header.pageSize;
-					this.page_used = (uint)pdb_header.pagesUsed; //this is all length of file in pages
+					this.page_size = (uint)pdb_header.PageSize;
+					this.page_used = (uint)pdb_header.PagesUsed; //this is all length of file in pages
 					this.buffer = Utils.ReadFile(path, (int)this.real_length,
 						new byte[Utils.GetAlignedLength((uint)this.real_length, this.page_size)]);
 
@@ -125,7 +126,7 @@ namespace PDBLib
         }
 		protected internal bool ParseInternal()
 		{
-			var pair = GetStream(KnownStreams.DebugInfo);
+			var pair = GetStream(KnownStream.DebugInfo);
 			if (pair == null || pair.Size == 0) return false;
 
 			var reader = new PDBStreamReader(pair, this);
@@ -254,29 +255,36 @@ namespace PDBLib
 
 		public bool LoadRootStream()
 		{
-			if (this.pdb_header.signature.SequenceEqual(PDBConsts.SignatureBytes))
+			if (this.pdb_header.Signature.SequenceEqual(PDBConsts.SignatureBytes))
 			{
-				var rootSize = (uint)this.pdb_header.directorySize;
-				var numRootPages = Utils.GetNumPages(rootSize, this.page_size);
-				var numRootIndexPages = Utils.GetNumPages(numRootPages * 4, this.page_size);
-				int rootIndices = Marshal.SizeOf<PDBHeader>();
+				var directorySize = (uint)this.pdb_header.DirectorySize;
+				var numRootPages = Utils.GetNumPages(directorySize, this.page_size);
+				var numRootIndexPages = Utils.GetNumPages(numRootPages * sizeof(uint), this.page_size);
+				int rootIndicesStartOffset = Marshal.SizeOf<PDBHeader>();
 				var rootPageList = new List<uint>();
+				var rootPagesOffset = 0u;
+				var cn = 0;
 				for (int i = 0; i < numRootIndexPages; ++i)
 				{
-					var rootPages = BitConverter.ToUInt32(this.buffer, rootIndices + i * sizeof(uint)) * this.page_size;
-					for (int j = 0; j < this.page_size / sizeof(uint); j++)
+					cn += sizeof(uint);
+					rootPagesOffset = BitConverter.ToUInt32(this.buffer,
+						rootIndicesStartOffset + i * sizeof(uint)) * this.page_size;
+					for (int j = 0; j < (this.page_size - rootIndicesStartOffset) / sizeof(uint); j++)
 					{
-						var rp = BitConverter.ToUInt32(this.buffer, (int)rootPages + j * sizeof(uint));
+						cn += sizeof(uint);
+						var rp = BitConverter.ToUInt32(this.buffer, (int)rootPagesOffset + j * sizeof(uint));
 						rootPageList.Add(rp);
 					}
+					//set to 0 from second page
+					rootIndicesStartOffset = 0;
 				}
 
 				uint pageIndex = 0;
 				uint pageOffset = 0;
-				var page = rootPageList[(int)pageIndex] * this.page_size;
+				var page_start_offset = rootPageList[(int)pageIndex] * this.page_size;
 
 				// The first 4 bytes are how many streams we actually need to read
-				var numStreams = BitConverter.ToUInt32(this.buffer, (int)page);
+				var numStreams = BitConverter.ToUInt32(this.buffer, (int)page_start_offset);
 
 				++pageOffset;
 				this.streams = new List<StreamPair>((int)numStreams);
@@ -291,7 +299,7 @@ namespace PDBLib
 					{
 						for (; streamIndex < numStreams && pageOffset < numItems; ++streamIndex, ++pageOffset)
 						{
-							var size = BitConverter.ToUInt32(this.buffer, (int)(page + pageOffset * sizeof(uint)));// page[pageOffset];
+							var size = BitConverter.ToUInt32(this.buffer, (int)(page_start_offset + pageOffset * sizeof(uint)));// page[pageOffset];
 							if (size == 0xFFFFFFFF)
 								streams.Add(new());
 							else
@@ -301,7 +309,7 @@ namespace PDBLib
 						// Advance to the next page
 						if (pageOffset == numItems)
 						{
-							page = rootPageList[(int)++pageIndex] * this.page_size;
+							page_start_offset = rootPageList[(int)++pageIndex] * this.page_size;
 							pageOffset = 0;
 						}
 					} while (streamIndex < numStreams);
@@ -328,29 +336,31 @@ namespace PDBLib
 							{
                                 streams[i].PageIndices[(int)(numPages - numToCopy + j)]=
 									BitConverter.ToUInt32(
-										this.buffer, (int)(page + pageOffset * sizeof(uint)+sizeof(uint)*j));
+										this.buffer, (int)(page_start_offset + pageOffset * sizeof(uint)+sizeof(uint)*j));
 							}
 							numToCopy -= num;
 							pageOffset += num;
 							if (pageOffset == numItems)
 							{
-								page = rootPageList[(int)++pageIndex] * this.page_size;
+								page_start_offset = rootPageList[(int)++pageIndex] * this.page_size;
 								pageOffset = 0;
 							}
 						} while (numToCopy != 0);
 					}
 				}
 
+				var streams_stream = this.GetStream(KnownStream.Streams);
 				uint numOk = 0;
+				if(streams_stream!=null)
 				{
-					var nameReader = new PDBStreamReader(streams[1], this);
+					var nameReader = new PDBStreamReader(streams_stream, this);
 
 					var nameIndexHeader = nameReader.Read<NameIndexHeader>();
 					this.m_guid = nameIndexHeader.guid;
 
 					var nameStart = nameReader.Offset;
 
-					var mapReader = new PDBStreamReader(streams[1], this);
+					var mapReader = new PDBStreamReader(streams_stream, this);
 					mapReader.Seek(nameStart + nameIndexHeader.names);
 
 					numOk = mapReader.Read<uint>();
@@ -423,16 +433,17 @@ namespace PDBLib
 				// The last page may be shorter than the actual page size
 				Array.Copy(this.buffer, ns.PageIndices[last] * this.page_size, names.Buffer, last * this.page_size, Math.Min( this.page_size, ns.Size- last*this.page_size));
 
-				var nsh = Utils.From<NameStreamHeader>(names.Buffer);
+				this.name_header = Utils.From<NameStreamHeader>(names.Buffer);
 
-				if (nsh.Sig != 0xeffeeffe || nsh.Version != 1)
+				if (this.name_header.Sig != PDBConsts.NameStreamSignature 
+					|| this.name_header.Version != PDBConsts.NameStreamVersion)
 				{
 					return false;
 				}
 
 				int nsl = Marshal.SizeOf<NameStreamHeader>();
 
-				int offsets = nsl + nsh.Offset;
+				int offsets = nsl + this.name_header.OffsetsOffset;
 
 				uint size = BitConverter.ToUInt32(names.Buffer, offsets);
 				offsets += sizeof(uint);
@@ -457,10 +468,10 @@ namespace PDBLib
 		// The type stream maps a type id to a description of that type
 		public Dictionary<uint, TypeInfo> LoadTypeStream()
 		{
-			var ts = GetStream(KnownStreams.TypeInfoStream)!;
-			if (ts.Size == 0) return new();
+			var stream = GetStream(KnownStream.TypeInfoStream)!;
+			if (stream.Size == 0) return new();
 
-			var reader = new PDBStreamReader(ts, this);
+			var reader = new PDBStreamReader(stream, this);
 
 			this.type_info_header = reader.Read<TypeInfoHeader>();
 
