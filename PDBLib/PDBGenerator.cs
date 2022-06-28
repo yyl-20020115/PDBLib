@@ -1,19 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.InteropServices;
 
 namespace PDBLib
 {
     public class PDBGenerator : IPDBGenerator
     {
-        public static readonly int PDBHeaderLength = Marshal.SizeOf<PDBHeader>();
-        public static readonly int DBIHeaderLength = Marshal.SizeOf<DBIHeader>();
-        public static readonly int DBIDebugHeaderLength = Marshal.SizeOf<DBIDebugHeader>();
-        public static readonly int TypeInfoHeaderLength = Marshal.SizeOf<TypeInfoHeader>();
-        public int PageSize { get; protected set; } = PDBConsts.DefaultPageAlignmentSize;
         protected PDBHeader pdb_header = new();
         protected NameStreamHeader name_header = new();
         protected NameIndexHeader name_index_header = new();
@@ -24,36 +14,33 @@ namespace PDBLib
         protected Dictionary<uint, UniqueSrc> unique = new();
         protected Dictionary<string, uint> name_indices = new();
         protected Dictionary<uint, string> stream_names = new();
-        protected SortedDictionary<uint,PDBStreamWriter> streams = new();
+        protected SortedDictionary<uint, PDBStreamWriter> streams = new();
 
+        public static readonly int PDBHeaderLength = Marshal.SizeOf<PDBHeader>();
+        public static readonly int DBIHeaderLength = Marshal.SizeOf<DBIHeader>();
+        public static readonly int DBIDebugHeaderLength = Marshal.SizeOf<DBIDebugHeader>();
+        public static readonly int TypeInfoHeaderLength = Marshal.SizeOf<TypeInfoHeader>();
+        public int PageSize { get; protected set; } = PDBConsts.DefaultPageAlignmentSize;        
         public PDBStreamWriter GetStream(KnownStream stream) => this.GetStream((uint)stream);
         public PDBStreamWriter GetStream(uint idx)
         {
             if(!this.streams.TryGetValue(idx, out var writer))
-            {
                 this.streams.Add(idx, writer = new());
-            }
             return writer;
         }
         protected uint uid = 0;
         protected void RegisterStrings(params string[] texts)
-        {
-            this.RegisterStrings(texts as IEnumerable<string>);
-        }
+            => this.RegisterStrings(texts as IEnumerable<string>);      
         protected void RegisterStrings(IEnumerable<string> texts)
         {
             foreach(var text in texts)
-            {
                 this.RegisterString(text);
-            }
         }
         protected uint RegisterString(string text)
         {
             if(!this.name_indices.TryGetValue(text,out var id))
-            {
                 this.name_indices.Add(text, id = uid++);
-            }
-            return id;
+           return id;
         }
         protected Dictionary<string,uint> RegisterStrings(PDBDocument doc)
         {
@@ -112,7 +99,7 @@ namespace PDBLib
             if (stream != null)
             {
                 var infos = new Dictionary<PDBModule, DBIModuleInfo>();
-
+    
                 stream.Reserve<DBIHeader>();
                 int offset = stream.Length;
                 for(int i = 0; i < doc.Modules.Count; i++)
@@ -184,16 +171,14 @@ namespace PDBLib
 
             }
             return stream ?? new ();
-        }
-        
+        }        
         protected PDBStreamWriter BuildTypeStream(PDBDocument doc) 
         {
             var stream = this.GetStream(KnownStream.TypeInfoStream)!;
             if (stream != null)
             {
                 stream.Reserve<TypeInfoHeader>();
-            //TODO:
-
+                //TODO:
                 stream.Rewind();
                 stream.Write(this.type_info_header);
             }
@@ -204,7 +189,7 @@ namespace PDBLib
             var stream = this.GetStream(KnownStream.TypeInfoStream)!;
             if (stream != null)
             {
-
+                //
             }
             return stream ?? new();
         }
@@ -277,13 +262,10 @@ namespace PDBLib
         {
             int total_size_of_all_aligned_streams
                 = this.streams.Values.Sum(s => s.GetAlignedSize(this.PageSize));
-
             int total_pages_of_all_aligned_streams
                 = Utils.GetNumPages(total_size_of_all_aligned_streams, this.PageSize);
-
             int total_pages_of_page_indices
                 = Utils.GetNumPages(total_pages_of_all_aligned_streams * sizeof(uint), this.PageSize);
-
             int total_pages_of_master_index
                 = 2/*FreePagesMap*/ + Utils.GetNumPages(PDBHeaderLength /*Header*/
                     + total_pages_of_page_indices * sizeof(uint), this.PageSize);
@@ -294,25 +276,18 @@ namespace PDBLib
             //should not happen
             if (root_pages_offset_keys_and_page_indices.Count * sizeof(uint) > (this.PageSize - PDBHeaderLength))
                 return false;
-
             int fpm_index = 0;
             int total_size_of_all_aligned_streams 
                 = this.streams.Values.Sum(s => s.GetAlignedSize(this.PageSize));
-
             int total_pages_of_all_aligned_streams
                 = Utils.GetNumPages(total_size_of_all_aligned_streams, this.PageSize);
-
             int total_pages_of_page_indices
                 = Utils.GetNumPages(total_pages_of_all_aligned_streams * sizeof(uint), this.PageSize);
-
             int total_pages_of_master_index
                 = 2/*FreePagesMap*/ + Utils.GetNumPages(PDBHeaderLength /*Header*/ 
                     + total_pages_of_page_indices * sizeof(uint), this.PageSize);
-
             int total_pages = total_pages_of_master_index + total_pages_of_all_aligned_streams;
-
-            var all_page_indices = new List<int>();
-            
+            var all_page_indices = new List<int>(); 
             //Keep space for header
             writer.Reserve<PDBHeader>();
             //Master Index
@@ -385,9 +360,7 @@ namespace PDBLib
             {
                 //write streams
                 foreach (var s in this.streams.Values)
-                {
                     writer.WriteBytes(s.ToArray());
-                }
             }
             return true;
         }
@@ -402,7 +375,6 @@ namespace PDBLib
                 this.BuildTypeStream(doc);  
                 this.BuildDebugStream(doc, this.name_indices, ref freeStreamIdx);
                 this.BuildGlobalStream(doc);
-                //TODO: name streams
                 this.BuildStreamsNamesStream(this.stream_names);
 
                 return true;
@@ -421,10 +393,11 @@ namespace PDBLib
             var list = new List<int>();
             dict.Add(page_after_master_index_Pages, list);
             foreach (var _stream in this.streams)
-            {
                 list.AddRange(
-                    _stream.Value.Complete(ref page_after_master_index_Pages, this.PageSize));
-            }
+                    _stream.Value.Complete(
+                        ref page_after_master_index_Pages, 
+                        this.PageSize));
+
             return this.BuildRootStream(new (stream), dict);
         }
     }

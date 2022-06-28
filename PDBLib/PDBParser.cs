@@ -1,9 +1,7 @@
 ﻿using System.Runtime.InteropServices;
-using System.Text;
-using System.Linq;
 namespace PDBLib
 {
-	public class PDBParser
+    public class PDBParser
 	{
 		public Dictionary<uint, (string, GlobalRecord)> Globals => globals;
 		public List<FunctionRecord> Functions => this.functions;
