@@ -1,30 +1,28 @@
-﻿namespace AsmPDBGenerator
+﻿namespace AsmPDBGenerator;
+public static class Program
 {
-    public static class Program
+    public static int Main(string[] args)
     {
-        public static int Main(string[] args)
+        var i = 0;
+        if (args.Length == 0)
         {
-            var i = 0;
-            if (args.Length == 0)
+            Console.WriteLine("AsmPDBGenerator generates .pdb files from .yml files (produced by NASM etc)");
+            Console.WriteLine("Usage: AsmPDBGenerator [debug1.yml] [debug2.yml] ...");
+        }
+        else
+        {
+            foreach (var arg in args)
             {
-                Console.WriteLine("AsmPDBGenerator generates .pdb files from .yml files (produced by NASM etc)");
-                Console.WriteLine("Usage: AsmPDBGenerator [debug1.yml] [debug2.yml] ...");
-            }
-            else
-            {
-                foreach (var arg in args)
+                if (Path.GetExtension(arg).ToLower() == ".yml")
                 {
-                    if (Path.GetExtension(arg).ToLower() == ".yml")
+                    var generator = new NAsmPDBGenerator();
+                    if (generator.Load(arg) && generator.Generate(Path.ChangeExtension(arg, ".pdb")))
                     {
-                        var generator = new NasmPDBGenerator();
-                        if (generator.Load(arg) && generator.Generate(Path.ChangeExtension(arg, ".pdb")))
-                        {
-                            i++;
-                        }
+                        i++;
                     }
                 }
             }
-            return i == args.Length ? 0 : -i;
         }
-    }
+        return i == args.Length ? 0 : -i;
+    }                       
 }

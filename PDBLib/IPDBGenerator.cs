@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PDBLib
+﻿namespace PDBLib;
+public interface IPDBGenerator
 {
-    public interface IPDBGenerator
-    {
-        bool Generate(string pdb_path);
-        bool Generate(Stream stream);
-    }
+    bool Generate(string pdb_path);
+    bool Generate(Stream stream);
 }
