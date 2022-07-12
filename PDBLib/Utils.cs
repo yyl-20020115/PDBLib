@@ -17,7 +17,7 @@ public static class Utils
     {
         var ret = new List<byte>();
         byte b = 0;
-        while (start<bytes.Length && (b = bytes[start]) != 0)
+        while (start < bytes.Length && (b = bytes[start]) != 0)
         {
             ret.Add(b);
             start++;
@@ -71,11 +71,11 @@ public static class Utils
 
         return ret;
     }
-    public static IEnumerable<string> ToHex(IEnumerable<byte> bytes) 
-        => bytes!=null ? from b in bytes
-           select string.Format("{0:X2}", b):Array.Empty<string>();
+    public static IEnumerable<string> ToHex(IEnumerable<byte> bytes)
+        => bytes != null ? from b in bytes
+                           select string.Format("{0:X2}", b) : Array.Empty<string>();
     public static string ToTypeName(uint type, Dictionary<uint, TypeInfo> type_info)
-        => type_info.TryGetValue(type, out var ti) ? ti.Name : (type==2?"T_FUNCTION":string.Format("T_TYPE_{0:X8}", type));
+        => type_info.TryGetValue(type, out var ti) ? ti.Name : (type == 2 ? "T_FUNCTION" : string.Format("T_TYPE_{0:X8}", type));
 
     public static PDBType ToPDBType(uint type, Dictionary<uint, TypeInfo> type_info)
     {
@@ -105,7 +105,7 @@ public static class Utils
                         var lm = From<LeafModifier>(data);
                         var mf = ToPDBType(lm.type, type_info);
                         ret.SubTypes.Add("modifier", mf);
-                        ret.Values.Add("modifier",((CV_modifier)lm.attr).ToString());
+                        ret.Values.Add("modifier", ((CV_modifier)lm.attr).ToString());
                     }
                     break;
                 // The argument list for a function definition
@@ -113,8 +113,8 @@ public static class Utils
                     {
                         var lal = From<LeafArgList>(data);
                         for (int i = 0; i < lal.count; ++i)
-                            ret.SubTypes.Add("arg_"+i,ToPDBType(
-                                BitConverter.ToUInt32(data, 
+                            ret.SubTypes.Add("arg_" + i, ToPDBType(
+                                BitConverter.ToUInt32(data,
                                     sizeof(uint) + i * sizeof(uint)), type_info));
                     }
                     break;
@@ -124,13 +124,13 @@ public static class Utils
                         ret.IsPointer = true;
                         var lp = From<LeafPointer>(data);
                         var ptr = ToPDBType(lp.utype, type_info);
-                        ret.SubTypes.Add("basetype",ptr);
+                        ret.SubTypes.Add("basetype", ptr);
                         var mf = (CV_ptrmode)((lp.attr & (uint)LeafPointerAttr.ptrmode) >> 5);
-                        ret.Values.Add("mode",mf.ToString());
+                        ret.Values.Add("mode", mf.ToString());
                         if (0 != (lp.attr & (uint)LeafPointerAttr.isconst))
-                            ret.Values.Add("const","true"); 
+                            ret.Values.Add("const", "true");
                         if (0 != (lp.attr & (uint)LeafPointerAttr.isvolatile))
-                            ret.Values.Add("volatile","true");
+                            ret.Values.Add("volatile", "true");
                         // restrict could be added, but not necessarily interesting?
                     }
                     break;
@@ -138,39 +138,39 @@ public static class Utils
                     {
                         var la = From<LeafArray>(data);
                         var tp = ToPDBType(la.elemtype, type_info);
-                        ret.SubTypes.Add("elemtype",tp);
+                        ret.SubTypes.Add("elemtype", tp);
                         // According to the comments, if this value is less than 0x8000 then
                         // the next 2 bytes are the actual value
                         var header_size = Marshal.SizeOf<LeafArray>();
-                        if (la.idxtype < 0x8000 && data.Length>= header_size)
+                        if (la.idxtype < 0x8000 && data.Length >= header_size)
                         {
                             ret.Values.Add("value", string.Join(',', ToHex(data[header_size..])));
                         }
                         else
                         {
-                            ret.SubTypes.Add("idxtype",ToPDBType(la.idxtype, type_info));
+                            ret.SubTypes.Add("idxtype", ToPDBType(la.idxtype, type_info));
                         }
                     }
                     break;
                 case LEAF.LF_MFUNCTION:
                     {
                         var lmf = From<LeafMFunc>(data);
-                        ret.SubTypes.Add("rvtype",ToPDBType(lmf.rvtype, type_info));
-                        ret.SubTypes.Add("clstype",ToPDBType(lmf.classtype, type_info));
-                        ret.SubTypes.Add("arglist",ToPDBType(lmf.arglist, type_info));
+                        ret.SubTypes.Add("rvtype", ToPDBType(lmf.rvtype, type_info));
+                        ret.SubTypes.Add("clstype", ToPDBType(lmf.classtype, type_info));
+                        ret.SubTypes.Add("arglist", ToPDBType(lmf.arglist, type_info));
                     }
                     break;
                 case LEAF.LF_PROCEDURE:
                     {
                         var proc = From<LeafProc>(data);
-                        ret.SubTypes.Add("rvtype",ToPDBType(proc.rvtype, type_info));
-                        ret.SubTypes.Add("arglist",ToPDBType(proc.arglist, type_info));
+                        ret.SubTypes.Add("rvtype", ToPDBType(proc.rvtype, type_info));
+                        ret.SubTypes.Add("arglist", ToPDBType(proc.arglist, type_info));
                     }
                     break;
                 case LEAF.LF_INDEX:
                     {
                         var li = From<LeafIndex>(data);
-                        ret.SubTypes.Add("index",ToPDBType(li.index, type_info));
+                        ret.SubTypes.Add("index", ToPDBType(li.index, type_info));
                     }
                     break;
                 // All types past this point are leaf types that terminate recursion
@@ -180,13 +180,13 @@ public static class Utils
                 case LEAF.LF_CLASS:
                 case LEAF.LF_STRUCTURE:
                     {
-                        ret.Values.Add("value",string.Join(',', ToHex(data)));
+                        ret.Values.Add("value", string.Join(',', ToHex(data)));
                     }
                     break;
                 case LEAF.LF_CHAR:
                     {
                         var ch = From<LeafChar>(data);
-                        ret.Values.Add("value",((char)ch.val).ToString());
+                        ret.Values.Add("value", ((char)ch.val).ToString());
                     }
                     break;
                 case LEAF.LF_SHORT:
@@ -248,7 +248,7 @@ public static class Utils
                 case LEAF.LF_QUADWORD:
                     {
                         var ll = From<LeafQuad>(data);
-                        ret.Values.Add("value", string.Format("{0:X16}",ll.val));
+                        ret.Values.Add("value", string.Format("{0:X16}", ll.val));
                     }
                     break;
                 case LEAF.LF_UQUADWORD:

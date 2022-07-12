@@ -24,5 +24,5 @@ public static class Program
             }
         }
         return i == args.Length ? 0 : -i;
-    }                       
+    }
 }

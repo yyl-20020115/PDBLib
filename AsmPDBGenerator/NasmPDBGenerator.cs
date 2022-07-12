@@ -28,9 +28,9 @@ public class NAsmPDBGenerator : IPDBGenerator
     public PDBGenerator Generator => this.generator;
 
     protected PDBDocument document = new();
-    protected PDBGenerator generator = new ();
-    protected PDBModule module = new ();
-    protected PDBFunction function = new ();
+    protected PDBGenerator generator = new();
+    protected PDBModule module = new();
+    protected PDBFunction function = new();
     public NAsmPDBGenerator()
     {
         this.document.Functions.Add(this.function);
@@ -38,7 +38,7 @@ public class NAsmPDBGenerator : IPDBGenerator
     }
     protected bool ProcessInfo(YamlNode info)
     {
-        if(info is YamlMappingNode mapping)
+        if (info is YamlMappingNode mapping)
         {
             var creator = (string?)mapping["creator"] ?? "";
             var language = (string?)mapping["language"] ?? "";
@@ -59,22 +59,22 @@ public class NAsmPDBGenerator : IPDBGenerator
         if (source_files is YamlSequenceNode files)
         {
             foreach (var file in files.Children)
-            {                    
-                var line_count = (string?)file["line-count"]??"";
-                
-                if(file["locations"] is YamlSequenceNode locations)
+            {
+                var line_count = (string?)file["line-count"] ?? "";
+
+                if (file["locations"] is YamlSequenceNode locations)
                 {
-                    foreach(var location in locations)
+                    foreach (var location in locations)
                     {
-                        if(location is YamlMappingNode loc)
+                        if (location is YamlMappingNode loc)
                         {
-                            if(uint.TryParse((string?)loc["code-offset"] ?? "", out var code_offset)
-                                && uint.TryParse((string?)loc["line-number"]??"",out var line_number))
+                            if (uint.TryParse((string?)loc["code-offset"] ?? "", out var code_offset)
+                                && uint.TryParse((string?)loc["line-number"] ?? "", out var line_number))
                             {
                                 //line number is related to function start line
                                 //however we only have one function for Nasm.
                                 this.function.Lines.Add(new PDBLine
-                                    { CodeOffset = code_offset, LineNumber = line_number });
+                                { CodeOffset = code_offset, LineNumber = line_number });
                             }
                         }
                     }
@@ -84,9 +84,9 @@ public class NAsmPDBGenerator : IPDBGenerator
     }
     protected void ProcessSymbols(YamlNode symbols)
     {
-        if(symbols is YamlSequenceNode sequence)
+        if (symbols is YamlSequenceNode sequence)
         {
-            foreach(var symbol in sequence.Children)
+            foreach (var symbol in sequence.Children)
             {
                 var name = (string?)symbol["name"] ?? "";
                 var section = (string?)symbol["section"] ?? "";
@@ -96,7 +96,7 @@ public class NAsmPDBGenerator : IPDBGenerator
                 var stype = (string?)symbol["stype"] ?? "";
                 var bits = (string?)symbol["bits"] ?? "";
 
-                if(type=="PROC" || type=="CODE")
+                if (type == "PROC" || type == "CODE")
                 {
                     this.function.Name = name; //this is the single name, maybe main
                     uint.TryParse(section, out this.function.Segment);
@@ -107,19 +107,24 @@ public class NAsmPDBGenerator : IPDBGenerator
                     if (bits == "32")
                     {
                         this.PDBDocument.Bits = PDBBits.Bits32;
-                    }else if(bits == "64")
+                    }
+                    else if (bits == "64")
                     {
                         this.PDBDocument.Bits = PDBBits.Bits64;
                     }
                 }
-                else if(type=="LDATA" || type=="GDATA")
+                else if (type == "LDATA" || type == "GDATA")
                 {
                     uint.TryParse(offset, out var _offset);
                     uint.TryParse(section, out var segment);
                     uint.TryParse(size, out var _size);
                     this.document.Globals.Add(
-                        new PDBGlobal { Name = name, Offset=_offset,
-                            Segment = segment, LeafType = ConvertTypeName(stype),
+                        new PDBGlobal
+                        {
+                            Name = name,
+                            Offset = _offset,
+                            Segment = segment,
+                            LeafType = ConvertTypeName(stype),
                             SymType = type,
                         });
                 }
@@ -131,9 +136,9 @@ public class NAsmPDBGenerator : IPDBGenerator
         using var reader = new StreamReader(yaml_path);
         var stream = new YamlStream();
         stream.Load(reader);
-        foreach(var doc in stream.Documents)
+        foreach (var doc in stream.Documents)
         {
-            if (doc.RootNode is YamlMappingNode root 
+            if (doc.RootNode is YamlMappingNode root
                 && root.Children.TryGetValue("info", out var info))
             {
                 if (this.ProcessInfo(info))

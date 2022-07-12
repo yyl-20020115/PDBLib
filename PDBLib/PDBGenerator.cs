@@ -19,29 +19,29 @@ public class PDBGenerator : IPDBGenerator
     public static readonly int DBIHeaderLength = Marshal.SizeOf<DBIHeader>();
     public static readonly int DBIDebugHeaderLength = Marshal.SizeOf<DBIDebugHeader>();
     public static readonly int TypeInfoHeaderLength = Marshal.SizeOf<TypeInfoHeader>();
-    public int PageSize { get; protected set; } = PDBConsts.DefaultPageAlignmentSize;        
+    public int PageSize { get; protected set; } = PDBConsts.DefaultPageAlignmentSize;
     public PDBStreamWriter GetStream(KnownStream stream) => this.GetStream((uint)stream);
     public PDBStreamWriter GetStream(uint idx)
     {
-        if(!this.streams.TryGetValue(idx, out var writer))
+        if (!this.streams.TryGetValue(idx, out var writer))
             this.streams.Add(idx, writer = new());
         return writer;
     }
     protected uint uid = 0;
     protected void RegisterStrings(params string[] texts)
-        => this.RegisterStrings(texts as IEnumerable<string>);      
+        => this.RegisterStrings(texts as IEnumerable<string>);
     protected void RegisterStrings(IEnumerable<string> texts)
     {
-        foreach(var text in texts)
+        foreach (var text in texts)
             this.RegisterString(text);
     }
     protected uint RegisterString(string text)
     {
-        if(!this.name_indices.TryGetValue(text,out var id))
+        if (!this.name_indices.TryGetValue(text, out var id))
             this.name_indices.Add(text, id = uid++);
-       return id;
+        return id;
     }
-    protected Dictionary<string,uint> RegisterStrings(PDBDocument doc)
+    protected Dictionary<string, uint> RegisterStrings(PDBDocument doc)
     {
         this.RegisterString(PDBConsts.NameStreamName);
         this.RegisterString(doc.Creator);
@@ -50,26 +50,27 @@ public class PDBGenerator : IPDBGenerator
         this.RegisterString(doc.Machine);
         doc.Names.ForEach(n => this.RegisterString(n));
         doc.Globals.ForEach(g => this.RegisterStrings(g.Name, g.SymType, g.LeafType));
-        doc.Modules.ForEach(m => { 
-            this.RegisterStrings(m.ModuleName); 
+        doc.Modules.ForEach(m =>
+        {
+            this.RegisterStrings(m.ModuleName);
             this.RegisterStrings(m.Sources);
-            this.RegisterStrings(m.FunctionNames); 
+            this.RegisterStrings(m.FunctionNames);
         });
-        doc.Functions.ForEach(f => this.RegisterStrings(f.Name,f.Source));
+        doc.Functions.ForEach(f => this.RegisterStrings(f.Name, f.Source));
         doc.Types.ForEach(t => this.RegisterStrings(t.Collect()));
         return this.name_indices;
     }
     protected PDBStreamWriter BuildNameStream(PDBDocument doc)
     {
         var names = this.RegisterStrings(doc);
-        if(names.TryGetValue(PDBConsts.NameStreamName, out var idx))
+        if (names.TryGetValue(PDBConsts.NameStreamName, out var idx))
         {
             var stream = this.GetStream(idx);
             stream.Reserve<NameStreamHeader>();
             int offset = 0;
             var texts = names.Keys.ToArray();
             var offsets = new List<int>();
-            for(int i = 0; i < texts.Length; i++)
+            for (int i = 0; i < texts.Length; i++)
             {
                 offsets.Add(offset);
                 offset += stream.Write(texts[i]);
@@ -78,7 +79,7 @@ public class PDBGenerator : IPDBGenerator
             //size
             stream.Write(texts.Length);
             //offsets
-            for(int i = 0; i < offsets.Count; i++)
+            for (int i = 0; i < offsets.Count; i++)
             {
                 stream.Write(offsets[i]);
                 offset += sizeof(int);
@@ -86,22 +87,22 @@ public class PDBGenerator : IPDBGenerator
             stream.Rewind();
             this.name_header.Sig = PDBConsts.NameStreamSignature;
             this.name_header.Version = PDBConsts.NameStreamVersion;
-            this.name_header.OffsetsOffset =(int) offset;
+            this.name_header.OffsetsOffset = (int)offset;
             stream.Write(this.name_header);
             return stream;
         }
         return new();
     }
-    protected PDBStreamWriter BuildDebugStream(PDBDocument doc, Dictionary<string,uint> names, ref ushort freeStreamIdx)
+    protected PDBStreamWriter BuildDebugStream(PDBDocument doc, Dictionary<string, uint> names, ref ushort freeStreamIdx)
     {
-        var stream = this.GetStream(KnownStream.DebugInfo);
+        var stream = this.GetStream(KnownStream.DebugInfoStream);
         if (stream != null)
         {
             var infos = new Dictionary<PDBModule, DBIModuleInfo>();
 
             stream.Reserve<DBIHeader>();
             int offset = stream.Length;
-            for(int i = 0; i < doc.Modules.Count; i++)
+            for (int i = 0; i < doc.Modules.Count; i++)
             {
                 var module = doc.Modules[i];
                 var info = new DBIModuleInfo();
@@ -114,7 +115,7 @@ public class PDBGenerator : IPDBGenerator
                 stream.Write(module.ModuleName);
                 stream.Write(module.ObjectName);
                 stream.Align(4);
-                infos.Add(module,info);
+                infos.Add(module, info);
             }
             this.dbi_header.moduleSize = (uint)(stream.Length - offset);
 
@@ -129,12 +130,12 @@ public class PDBGenerator : IPDBGenerator
             if (doc.SectionHeaders.Count > 0)
             {
                 var ss = this.GetStream(this.dbi_debug_header.sectionHdr = freeStreamIdx++);
-                for(int i= 0; i < doc.SectionHeaders.Count; i++)
+                for (int i = 0; i < doc.SectionHeaders.Count; i++)
                 {
                     ss.Write(doc.SectionHeaders[i]);
                 }
             }
-            foreach(var pair in infos)
+            foreach (var pair in infos)
             {
                 var info = pair.Value;
                 var info_stream = this.GetStream((uint)info.stream);
@@ -145,10 +146,10 @@ public class PDBGenerator : IPDBGenerator
 
                     //TODO:
                     info.cbSyms = 0;
-                    for(int i = 0; i < pair.Key.Sources.Count; i++)
+                    for (int i = 0; i < pair.Key.Sources.Count; i++)
                     {
                         var source = pair.Key.Sources[i];
-                        if(names.TryGetValue(source, out var name_idx))
+                        if (names.TryGetValue(source, out var name_idx))
                         {
                             var subsection_header = new SubsectionHeader();
                             subsection_header.Sig = (int)Subsection.FileChecksums;
@@ -169,9 +170,9 @@ public class PDBGenerator : IPDBGenerator
             //TODO: global functions
 
         }
-        return stream ?? new ();
-    }        
-    protected PDBStreamWriter BuildTypeStream(PDBDocument doc) 
+        return stream ?? new();
+    }
+    protected PDBStreamWriter BuildTypeStream(PDBDocument doc)
     {
         var stream = this.GetStream(KnownStream.TypeInfoStream)!;
         if (stream != null)
@@ -192,9 +193,9 @@ public class PDBGenerator : IPDBGenerator
         }
         return stream ?? new();
     }
-    protected PDBStreamWriter BuildStreamsNamesStream(Dictionary<uint,string> stream_names)
+    protected PDBStreamWriter BuildStreamsNamesStream(Dictionary<uint, string> stream_names)
     {
-        var streams_stream = this.GetStream(KnownStream.Streams)!;
+        var streams_stream = this.GetStream(KnownStream.StreamsStream)!;
         if (streams_stream != null)
         {
             this.name_index_header.age = 2;
@@ -209,7 +210,7 @@ public class PDBGenerator : IPDBGenerator
             //numOk
             //skp
             //deletedskip
-            for(int i = 0; i < stream_names.Count >> 5; i++)
+            for (int i = 0; i < stream_names.Count >> 5; i++)
             {
                 streams_stream.Write(0xffffffff); //all oks
             }
@@ -239,7 +240,7 @@ public class PDBGenerator : IPDBGenerator
 
             streams_stream.Reserve(stream_names.Count * Marshal.SizeOf<StringStreamIds>());
 
-            for(int i = 0; i < texts.Count; i++)
+            for (int i = 0; i < texts.Count; i++)
             {
                 ids[i] = offset;
                 offset += (uint)streams_stream.Write(texts[i]);
@@ -276,21 +277,21 @@ public class PDBGenerator : IPDBGenerator
         if (root_pages_offset_keys_and_page_indices.Count * sizeof(uint) > (this.PageSize - PDBHeaderLength))
             return false;
         int fpm_index = 0;
-        int total_size_of_all_aligned_streams 
+        int total_size_of_all_aligned_streams
             = this.streams.Values.Sum(s => s.GetAlignedSize(this.PageSize));
         int total_pages_of_all_aligned_streams
             = Utils.GetNumPages(total_size_of_all_aligned_streams, this.PageSize);
         int total_pages_of_page_indices
             = Utils.GetNumPages(total_pages_of_all_aligned_streams * sizeof(uint), this.PageSize);
         int total_pages_of_master_index
-            = 2/*FreePagesMap*/ + Utils.GetNumPages(PDBHeaderLength /*Header*/ 
+            = 2/*FreePagesMap*/ + Utils.GetNumPages(PDBHeaderLength /*Header*/
                 + total_pages_of_page_indices * sizeof(uint), this.PageSize);
         int total_pages = total_pages_of_master_index + total_pages_of_all_aligned_streams;
-        var all_page_indices = new List<int>(); 
+        var all_page_indices = new List<int>();
         //Keep space for header
         writer.Reserve<PDBHeader>();
         //Master Index
-        foreach(var root_page in root_pages_offset_keys_and_page_indices)
+        foreach (var root_page in root_pages_offset_keys_and_page_indices)
         {
             writer.Write(root_page.Key);
             int location = writer.Length;
@@ -307,14 +308,14 @@ public class PDBGenerator : IPDBGenerator
         //maybe zeros following
         writer.Align(this.PageSize);
         //
-        fpm_index = Utils.GetNumPages(writer.Length, this.PageSize);           
+        fpm_index = Utils.GetNumPages(writer.Length, this.PageSize);
         writer.Reserve(this.PageSize * 2);
         int directorySize = writer.Length;
 
         //streams and count
         int page_index = 0;
         int page_offset = (all_page_indices[page_index++]) * this.PageSize;
-        
+
         //stream count and all stream sizes
         writer.Seek(page_offset);
         writer.Write(this.streams.Count); //save count of streams
@@ -324,15 +325,16 @@ public class PDBGenerator : IPDBGenerator
         int stream_index = 0;
         int first = 1;
         //all sizes of streams
-        while(page_index<all_page_indices.Count 
-            && stream_index < stream_numbers.Count 
+        while (page_index < all_page_indices.Count
+            && stream_index < stream_numbers.Count
             && stream_index < index_count_for_one_page)
         {
             var stream_number = stream_numbers[stream_index++];
-            if(this.streams.TryGetValue(stream_number,out var stream)){
+            if (this.streams.TryGetValue(stream_number, out var stream))
+            {
                 writer.Write(stream.Length);
             }
-            if((stream_index + first) % index_count_for_one_page == 0)
+            if ((stream_index + first) % index_count_for_one_page == 0)
             {
                 writer.Seek(all_page_indices[page_index++] * this.PageSize);
                 first = 0;
@@ -345,8 +347,8 @@ public class PDBGenerator : IPDBGenerator
             Array.Copy(PDBConsts.SignatureBytes, this.pdb_header.Signature = new byte[PDBConsts.SignatureBytes.Length], PDBConsts.SignatureBytes.Length);
             this.pdb_header.PageSize = PDBConsts.DefaultPageAlignmentSize;
             this.pdb_header.FreePageMapIndex = fpm_index; //NOTICE: USE Free Page Map at Page Index 1
-            this.pdb_header.PagesUsed = total_pages; //NOTICE: all pages
-            this.pdb_header.DirectorySize = directorySize;
+            this.pdb_header.PagesCount = total_pages; //NOTICE: all pages
+            this.pdb_header.RootSize = directorySize;
             this.pdb_header.Reserved = 0;
 
             //Write pdb header
@@ -369,9 +371,8 @@ public class PDBGenerator : IPDBGenerator
         if (doc != null)
         {
             ushort freeStreamIdx = 0;
-
             this.BuildNameStream(doc);
-            this.BuildTypeStream(doc);  
+            this.BuildTypeStream(doc);
             this.BuildDebugStream(doc, this.name_indices, ref freeStreamIdx);
             this.BuildGlobalStream(doc);
             this.BuildStreamsNamesStream(this.stream_names);
@@ -394,9 +395,9 @@ public class PDBGenerator : IPDBGenerator
         foreach (var _stream in this.streams)
             list.AddRange(
                 _stream.Value.Complete(
-                    ref page_after_master_index_Pages, 
+                    ref page_after_master_index_Pages,
                     this.PageSize));
 
-        return this.BuildRootStream(new (stream), dict);
+        return this.BuildRootStream(new(stream), dict);
     }
 }

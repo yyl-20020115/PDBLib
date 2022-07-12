@@ -27,7 +27,7 @@ public class PDBStreamWriter
     }
     public int WriteUInts(uint[] uints)
     {
-        for(int i = 0; i < uints.Length; i++)
+        for (int i = 0; i < uints.Length; i++)
             this.Write(uints[i]);
         return uints.Length * sizeof(uint);
     }
@@ -70,9 +70,9 @@ public class PDBStreamWriter
     {
         this.Pages.Clear();
         this.Align(alignment);
-        for(int i = 0; i < this.Length; i+=alignment)
+        for (int i = 0; i < this.Length; i += alignment)
             this.Pages.Add(page++);
         return this.Pages;
     }
-    public byte[] ToArray()=>this.stream is MemoryStream m ? m.ToArray():Array.Empty<byte>();
+    public byte[] ToArray() => this.stream is MemoryStream m ? m.ToArray() : Array.Empty<byte>();
 }

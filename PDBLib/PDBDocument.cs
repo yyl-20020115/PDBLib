@@ -13,8 +13,7 @@
 ///| n+6	         | Symbol records                    | Actual symbol records of global and public symbols
 ///| n+7	         | Type hash                          | Hash used by the TPI stream.
 /// </summary>
-//[Yaml]
-public enum PDBBits:uint
+public enum PDBBits : uint
 {
     Bits32 = 0,
     Bits64 = 1,
@@ -45,13 +44,13 @@ public class PDBType
 {
     public string TypeName = "";
     public bool IsPointer = false;
-    public Dictionary<string, string> Values =new();
+    public Dictionary<string, string> Values = new();
     public Dictionary<string, PDBType> SubTypes = new();
     public HashSet<string> Collect(HashSet<string>? texts = null)
     {
         texts ??= new();
         texts.Add(this.TypeName);
-        foreach(var st in this.SubTypes)
+        foreach (var st in this.SubTypes)
         {
             texts.Add(st.Key);
             st.Value.Collect(texts);
@@ -72,7 +71,7 @@ public class PDBModule
     public string ModuleName = "";
     public string ObjectName = "";
     public List<string> Sources = new();
-    public List<string> FunctionNames = new ();
+    public List<string> FunctionNames = new();
 }
 public class PDBFunction
 {
