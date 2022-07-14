@@ -381,12 +381,12 @@ public class PDBGenerator : IPDBGenerator
         }
         return false;
     }
-    public bool Generate(string path)
+    public virtual bool Generate(string path)
     {
         using var stream = File.OpenWrite(path);
         return this.Generate(stream);
     }
-    public bool Generate(Stream stream)
+    public virtual bool Generate(Stream stream)
     {
         int page_after_master_index_Pages = GetMasterIndexPagesCount();
         var dict = new SortedDictionary<int, List<int>>();

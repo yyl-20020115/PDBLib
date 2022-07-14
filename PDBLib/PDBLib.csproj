@@ -14,6 +14,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="System.Reflection.Metadata" Version="6.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.DiaSymReader.Converter\Microsoft.DiaSymReader.Converter.csproj" />
+    <ProjectReference Include="..\Microsoft.DiaSymReader\Microsoft.DiaSymReader.csproj" />
   </ItemGroup>
 
 </Project>
