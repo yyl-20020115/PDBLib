@@ -14,7 +14,7 @@ public class PDBGenerator : IPDBGenerator
     protected Dictionary<string, uint> name_indices = new();
     protected Dictionary<uint, string> stream_names = new();
     protected SortedDictionary<uint, PDBStreamWriter> streams = new();
-
+    protected PDBDocument doc = new();
     public static readonly int PDBHeaderLength = Marshal.SizeOf<PDBHeader>();
     public static readonly int DBIHeaderLength = Marshal.SizeOf<DBIHeader>();
     public static readonly int DBIDebugHeaderLength = Marshal.SizeOf<DBIDebugHeader>();
@@ -43,6 +43,7 @@ public class PDBGenerator : IPDBGenerator
     }
     protected Dictionary<string, uint> RegisterStrings(PDBDocument doc)
     {
+        this.doc = doc;
         this.RegisterString(PDBConsts.NameStreamName);
         this.RegisterString(doc.Creator);
         this.RegisterString(doc.Version);
@@ -258,6 +259,7 @@ public class PDBGenerator : IPDBGenerator
     //  0   HDR hdr     page 0: master index
     //  1   FPM fpm0    first free page map
     //  2   FPM fpm1    second free page map
+    // Total 21 Streams
     public int GetMasterIndexPagesCount()
     {
         int total_size_of_all_aligned_streams

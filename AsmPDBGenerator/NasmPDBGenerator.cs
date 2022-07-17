@@ -28,7 +28,7 @@ public class NAsmPDBGenerator : IPDBGenerator
     public PDBGenerator Generator => this.generator;
 
     protected PDBDocument document = new();
-    protected PDBGenerator generator = new();
+    protected PDBGenerator generator = new PDBGeneratorPortable();
     protected PDBModule module = new();
     protected PDBFunction function = new();
     public NAsmPDBGenerator()

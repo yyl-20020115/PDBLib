@@ -382,7 +382,7 @@ public class PDBParser
                 var deletedskip = mapReader.Read<uint>();
                 if (deletedskip != 0)
                 {
-                    return false;
+                    //return false;
                 }
 
                 mapReader.Seek(deletedOffset + (deletedskip + 1) * sizeof(uint));

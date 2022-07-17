@@ -8,6 +8,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="C:\Users\YILIN\.nuget\packages\microsoft.codeanalysis.debugging\4.1.0-1.21523.2\contentFiles\cs\netstandard1.3\CustomDebugInfoConstants.cs" />
+    <Compile Remove="C:\Users\YILIN\.nuget\packages\microsoft.codeanalysis.debugging\4.1.0-1.21523.2\contentFiles\cs\netstandard1.3\CustomDebugInfoEncoder.cs" />
+    <Compile Remove="C:\Users\YILIN\.nuget\packages\microsoft.codeanalysis.debugging\4.1.0-1.21523.2\contentFiles\cs\netstandard1.3\CustomDebugInfoKind.cs" />
+    <Compile Remove="C:\Users\YILIN\.nuget\packages\microsoft.codeanalysis.debugging\4.1.0-1.21523.2\contentFiles\cs\netstandard1.3\CustomDebugInfoReader.cs" />
+    <Compile Remove="C:\Users\YILIN\.nuget\packages\microsoft.codeanalysis.debugging\4.1.0-1.21523.2\contentFiles\cs\netstandard1.3\CustomDebugInfoRecord.cs" />
+    <Compile Remove="C:\Users\YILIN\.nuget\packages\microsoft.codeanalysis.debugging\4.1.0-1.21523.2\contentFiles\cs\netstandard1.3\DynamicLocalInfo.cs" />
+    <Compile Remove="C:\Users\YILIN\.nuget\packages\microsoft.codeanalysis.debugging\4.1.0-1.21523.2\contentFiles\cs\netstandard1.3\ImportTargetKind.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Debugging" Version="4.1.0-1.21523.2" />
     <PackageReference Include="Microsoft.DiaSymReader" Version="1.4.0" />
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
     <PackageReference Include="Microsoft.DiaSymReader.PortablePdb" Version="1.6.0">

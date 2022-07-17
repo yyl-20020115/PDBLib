@@ -2,8 +2,8 @@
   "profiles": {
     "PDBDumper": {
       "commandName": "Project",
-      "commandLineArgs": "basic64.pdb",
-      "workingDirectory": "..\\testing\\testdata\\windows"
+      "commandLineArgs": "YasmSample.pdb",
+      "workingDirectory": "C:\\Working\\PDBLib\\testing\\testdata\\nasm"
     }
   }
 }

@@ -1,0 +1,138 @@
+Creator: ''
+Version: ''
+Language: ''
+Machine: ''
+Bits: Bits64
+Names:
+- ''
+- C:\Users\YILIN\AppData\Local\Temp\lnk{46835B08-FD6C-490A-8273-A124CB72A630}.tmp
+- C:\Working\YasmSample\YasmSample\main.asm
+Globals:
+- Name: msg
+  LeafType: 4364
+  SymType: T_TYPE_00000020
+  Offset: 0
+  Segment: 3
+- Name: main
+  LeafType: 4366
+  SymType: T_TYPE_00000000
+  Offset: 3
+  Segment: 1
+Modules:
+- ModuleName: C:\Working\YasmSample\YasmSample\x64\Debug\main.obj
+  ObjectName: C:\Working\YasmSample\YasmSample\x64\Debug\main.obj
+  Sources:
+  - C:\Working\YasmSample\YasmSample\main.asm
+  FunctionNames: []
+- ModuleName: '* Linker Generated Manifest RES *'
+  ObjectName: ''
+  Sources:
+  - C:\Users\YILIN\AppData\Local\Temp\lnk{46835B08-FD6C-490A-8273-A124CB72A630}.tmp
+  FunctionNames: []
+- ModuleName: '* Linker *'
+  ObjectName: ''
+  Sources: []
+  FunctionNames: []
+Functions: []
+Types: []
+SectionHeaders:
+- Name:
+  - 46
+  - 116
+  - 101
+  - 120
+  - 116
+  - 0
+  - 0
+  - 0
+  PAddressOrSize:
+    PhysicalAddress: 4141
+    VirtualSize: 4141
+  VirtualAddress: 4096
+  SizeOfRawData: 4608
+  PointerToRawData: 1024
+  PointerToRelocations: 0
+  PointerToLinenumbers: 0
+  NumberOfRelocations: 0
+  NumberOfLinenumbers: 0
+  Characteristics: 1610612768
+- Name:
+  - 46
+  - 114
+  - 100
+  - 97
+  - 116
+  - 97
+  - 0
+  - 0
+  PAddressOrSize:
+    PhysicalAddress: 690
+    VirtualSize: 690
+  VirtualAddress: 12288
+  SizeOfRawData: 1024
+  PointerToRawData: 5632
+  PointerToRelocations: 0
+  PointerToLinenumbers: 0
+  NumberOfRelocations: 0
+  NumberOfLinenumbers: 0
+  Characteristics: 1073741888
+- Name:
+  - 46
+  - 100
+  - 97
+  - 116
+  - 97
+  - 0
+  - 0
+  - 0
+  PAddressOrSize:
+    PhysicalAddress: 274
+    VirtualSize: 274
+  VirtualAddress: 16384
+  SizeOfRawData: 512
+  PointerToRawData: 6656
+  PointerToRelocations: 0
+  PointerToLinenumbers: 0
+  NumberOfRelocations: 0
+  NumberOfLinenumbers: 0
+  Characteristics: 3221225536
+- Name:
+  - 46
+  - 114
+  - 115
+  - 114
+  - 99
+  - 0
+  - 0
+  - 0
+  PAddressOrSize:
+    PhysicalAddress: 1084
+    VirtualSize: 1084
+  VirtualAddress: 20480
+  SizeOfRawData: 1536
+  PointerToRawData: 7168
+  PointerToRelocations: 0
+  PointerToLinenumbers: 0
+  NumberOfRelocations: 0
+  NumberOfLinenumbers: 0
+  Characteristics: 1073741888
+- Name:
+  - 46
+  - 114
+  - 101
+  - 108
+  - 111
+  - 99
+  - 0
+  - 0
+  PAddressOrSize:
+    PhysicalAddress: 8
+    VirtualSize: 8
+  VirtualAddress: 24576
+  SizeOfRawData: 512
+  PointerToRawData: 8704
+  PointerToRelocations: 0
+  PointerToLinenumbers: 0
+  NumberOfRelocations: 0
+  NumberOfLinenumbers: 0
+  Characteristics: 1107296320
